@@ -13,7 +13,10 @@ import utils.stats.StatSummary;
 
 import java.util.ArrayList;
 import java.util.Random;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.GsonBuilder;
+import utils.GameStateSerializer;
 
 public class MonteCarloAgent extends Agent {
 
@@ -115,6 +118,15 @@ public class MonteCarloAgent extends Agent {
         String url = "http://localhost:8000/receive";
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("action", resultStr);
+
+        // Serialize the GameState
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(GameState.class, new GameStateSerializer())
+                .create();
+
+        // Serialize the GameState
+        String gameStateJson = gson.toJson(gs);
+        jsonObject.addProperty("gameState", gameStateJson); // Add serialized game state
 
         postRequestSender.sendPostRequest(url, jsonObject.toString());
 
