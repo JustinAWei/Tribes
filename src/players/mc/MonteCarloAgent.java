@@ -8,10 +8,12 @@ import core.game.GameState;
 import players.Agent;
 import players.heuristics.StateHeuristic;
 import utils.ElapsedCpuTimer;
+import utils.PostRequestSender;
 import utils.stats.StatSummary;
 
 import java.util.ArrayList;
 import java.util.Random;
+import com.google.gson.JsonObject;
 
 public class MonteCarloAgent extends Agent {
 
@@ -104,8 +106,17 @@ public class MonteCarloAgent extends Agent {
                 end = true;
         }
 
-//        System.out.println("[Tribe: " + playerID + "] Tick " +  gs.getTick() + ", num actions: " + rootActions.size() +
-//                ", FM calls: " + fmCalls + ". Executing " + bestAction.toString());
+        String resultStr = "[Tribe: " + playerID + "] Tick " +  gs.getTick() + ", num actions: " + rootActions.size() +
+                ", FM calls: " + fmCalls + ". Executing " + bestAction.toString();
+
+        System.out.println(resultStr);
+
+        PostRequestSender postRequestSender = new PostRequestSender();
+        String url = "http://localhost:8000/receive";
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("action", resultStr);
+
+        postRequestSender.sendPostRequest(url, jsonObject.toString());
 
         //Chosen action to play
         return bestAction;
