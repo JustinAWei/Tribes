@@ -37,7 +37,9 @@ ACTION_TYPES = {
     "LEVEL_UP": 5,
     "RESOURCE_GATHERING": 6,
     "SPAWN": 7,
+
     "END_TURN": 9,
+
     "ATTACK": 13,
     "CAPTURE": 14,
     "MOVE": 20

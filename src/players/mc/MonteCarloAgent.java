@@ -63,9 +63,8 @@ public class MonteCarloAgent extends Agent {
         jsonObject.add("gameState", gameStateJson); // Add serialized game state
 
         String response = postRequestSender.sendPostRequest(url, jsonObject.toString());
-        System.out.println(response);
         JSONObject jsonResponse = new JSONObject(response);
-        System.out.println(jsonResponse);
+        // System.out.println(jsonResponse);
 
         // turn into array
         JSONArray jsonArray = (JSONArray) jsonResponse.get("action");
@@ -79,7 +78,6 @@ public class MonteCarloAgent extends Agent {
         Integer actionId = (Integer) jsonArray.get(1);
         Types.ACTION actionType = Types.ACTION.values()[actionId];
 
-        Board board = gs.getBoard();
 
         // then, get the right param based on x,y
         Integer x1 = (Integer) jsonArray.get(2);
@@ -89,6 +87,7 @@ public class MonteCarloAgent extends Agent {
         Integer x2 = (Integer) jsonArray.get(4);
         Integer y2 = (Integer) jsonArray.get(5);
 
+        Board board = gs.getBoard();
         ArrayList<Action> allActions = gs.getAllAvailableActions();
 
         // filter by action type
@@ -125,6 +124,9 @@ public class MonteCarloAgent extends Agent {
                             if (destinationMatches) {
                                 filteredActions.add(a);
                             }
+                        }
+                        else if (actionType == Types.ACTION.CAPTURE) {
+                            filteredActions.add(a);
                         }
                     }
                 } else if (category == 0) {
