@@ -4,6 +4,8 @@ def game_state_to_vector(game_state):
     """
     Vectorize the game state into a numpy array. Below is the structure of the game state (and below that is the vectorization of the relevant features since not all features are relevant to the game for now).
 
+    GAME STATE STRUCTURE:
+
     - board
         - terrain 
             - Board size where each cell is a terrain type that needs to be converted); E.g. [['FOG', ...]]
@@ -40,7 +42,7 @@ def game_state_to_vector(game_state):
             - List of capital IDs (more information about it in "gameActors"); E.g. [1, 3]
         - tileCityId
             - Board size where each cell maps to the ID of the city that owns that tile
-            - This is not confirmed, but if it's 0, I believe that means it's in the fog
+            - TODO: This is not confirmed, but if it's 0, I believe that means it's in the fog
             - -1 means no city owns it
             - E.g. [[0, 0, -1, 14, 14, 14, -1, -1, -1, -1, -1], ...]
         - gameActors
@@ -107,6 +109,70 @@ def game_state_to_vector(game_state):
         - Current tick of the game; E.g. 13
     - gameIsOver
         - Boolean indicating if the game is over; E.g. False
+
+
+
+    VECTORIZATION OF RELEVANT FEATURES (may need to normalize if training is unstable)
+
+    Assume that the board size is n
+    - board
+        - terrain -> n x n x 1 (int ranging from 0 to 7 for terrain type)
+        - resources -> n x n x 1 (int ranging from 0 to 8 for resource types including None)
+        - buildings -> n x n x 1 (int ranging from 0 to 20 for building types including None)
+        - units -> n x n x 12 for the 12 attributes of a unit
+            - ATK -> int, no specific range, but typically between 0 to 5
+            - DEF -> int, no specific range, but typically between 0 to 5
+            - MOV -> int, no specific range, but typically between 0 to 3
+            - RANGE -> int, no specific range, but typically between 1 to 3
+            - maxHP -> int, no specific range, but typically between 1 to 40
+            - currentHP -> int, no specific range, but typically between 1 to 40
+            - kills -> int, no specific range, but typically between 0 to 5
+            - isVeteran -> bool
+            - cityPositionX -> int, x coordinate of the city the unit belongs to
+            - cityPositionY -> int, y coordinate of the city the unit belongs to
+            - status -> int, ranging from 0 to 5 for the status of the unit (fresh, moved, attacked, ...)
+            - tribeId -> int, id of the tribe the unit belongs to
+            - IF THERE IS NO UNIT, ALL VALUES ARE -1
+            - TODO: If we choose this, then action space should probably not use ID (use position instead?) since it may be an extra confusing step to learn a mapping between units at random sqaures to their ID. Otherwise, I'd have to define like board size^2 * 4 * 14 for the state space, but that's an arbitrary limit
+        - cities -> n x n x 8 for the 8 attributes of a city
+            - level -> int, no specific range, but typically between 1 to 10
+            - population -> int, no specific range, but typically between 0 to 10
+            - populationNeed -> int, no specific range, but typically between 1 to 10
+            - isCapital -> bool
+            - production -> int, no specific range, but typically between 0 to 12
+            - hasWalls -> bool
+            - bound -> int, between 1 to 2 for the extension of the ccity
+            - pointsWorth -> TODO: not included for now
+            - tribeId -> int, id of the tribe the city belongs to
+            - IF THERE IS NO CITY, ALL VALUES ARE -1
+            - TODO: Similar to units, we could use position instead of ID
+        - tribes
+            - TODO: lots of information here, will do this later
+        - tileCityId -> n x n x 2
+            - positionX -> int, x coordinate of the city that owns the tile
+            - positionY -> int, y coordinate of the city that owns the tile
+            - IF THERE IS NO CITY, ALL VALUES ARE -1
+            - TODO: Not confirmed, but if it's 0, I believe that means it's in the fog, so values will be -2
+        - activeTribeID -> int, id of the tribe that is currently making a move
+        - tradeNetwork -> n x n x 1 (1 bool for each tile)
+        - diplomacy -> 1 (float, ranges between -60 to 60, assumes only one other player)
+    - ranking
+        - TODO: lots of information here, will do this later (is this a duplicate of tribes in board?)
+
+    For the final tensor shape, we can do:
+    - CNN Approach for Actor network (keeps spatial information + uses less total parameters in network)
+        -  Create a tensor of shape (n, n, 26)
+            -  1 for terrain
+            -  1 for resources
+            -  1 for buildings
+            -  12 for unit attributes
+            -  8 for city attributes
+            -  2 for tile ownership
+            -  1 for trade network
+        - We also add global information (diplomacy, activeTribeID) as a separate vector
+        - Then combine features learned from both networks to a single vector and feed forward to the actor network
+    - Regular NN where we flatten everything -> bit simpler implementation, but loses performance
+    
     """
     # # Initialize vector components (adjust these based on your game state structure)
     # vector = []
