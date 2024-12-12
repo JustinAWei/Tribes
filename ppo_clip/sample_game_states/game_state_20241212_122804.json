@@ -1,0 +1,3221 @@
+{
+    "gameMode": "CAPITALS",
+    "tick": 41,
+    "gameIsOver": false,
+    "cityActions": {
+        "1": [
+            {
+                "buildingType": "LUMBER_HUT",
+                "cityId": 1,
+                "targetPos": {
+                    "x": 2,
+                    "y": 7
+                },
+                "actionType": "BUILD"
+            },
+            {
+                "cityId": 1,
+                "targetPos": {
+                    "x": 2,
+                    "y": 7
+                },
+                "actionType": "CLEAR_FOREST"
+            },
+            {
+                "cityId": 1,
+                "targetPos": {
+                    "x": 2,
+                    "y": 9
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 1,
+                "targetPos": {
+                    "x": 2,
+                    "y": 10
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 1,
+                "targetPos": {
+                    "x": 3,
+                    "y": 7
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 1,
+                "targetPos": {
+                    "x": 3,
+                    "y": 8
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 1,
+                "targetPos": {
+                    "x": 3,
+                    "y": 9
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 1,
+                "targetPos": {
+                    "x": 3,
+                    "y": 10
+                },
+                "actionType": "DESTROY"
+            }
+        ],
+        "8": [
+            {
+                "buildingType": "LUMBER_HUT",
+                "cityId": 8,
+                "targetPos": {
+                    "x": 2,
+                    "y": 3
+                },
+                "actionType": "BUILD"
+            },
+            {
+                "buildingType": "LUMBER_HUT",
+                "cityId": 8,
+                "targetPos": {
+                    "x": 2,
+                    "y": 6
+                },
+                "actionType": "BUILD"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 2,
+                    "y": 3
+                },
+                "actionType": "CLEAR_FOREST"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 2,
+                    "y": 6
+                },
+                "actionType": "CLEAR_FOREST"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 0,
+                    "y": 3
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 0,
+                    "y": 4
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 0,
+                    "y": 5
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 0,
+                    "y": 6
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 2,
+                    "y": 4
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 3,
+                    "y": 3
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 8,
+                "targetPos": {
+                    "x": 3,
+                    "y": 5
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "resource": "ANIMAL",
+                "cityId": 8,
+                "targetPos": {
+                    "x": 1,
+                    "y": 3
+                },
+                "actionType": "RESOURCE_GATHERING"
+            },
+            {
+                "resource": "ANIMAL",
+                "cityId": 8,
+                "targetPos": {
+                    "x": 2,
+                    "y": 3
+                },
+                "actionType": "RESOURCE_GATHERING"
+            },
+            {
+                "unit_type": "WARRIOR",
+                "cityId": 8,
+                "targetPos": {
+                    "x": 1,
+                    "y": 5
+                },
+                "actionType": "SPAWN"
+            },
+            {
+                "unit_type": "RIDER",
+                "cityId": 8,
+                "targetPos": {
+                    "x": 1,
+                    "y": 5
+                },
+                "actionType": "SPAWN"
+            },
+            {
+                "unit_type": "DEFENDER",
+                "cityId": 8,
+                "targetPos": {
+                    "x": 1,
+                    "y": 5
+                },
+                "actionType": "SPAWN"
+            },
+            {
+                "unit_type": "ARCHER",
+                "cityId": 8,
+                "targetPos": {
+                    "x": 1,
+                    "y": 5
+                },
+                "actionType": "SPAWN"
+            }
+        ],
+        "27": [
+            {
+                "buildingType": "LUMBER_HUT",
+                "cityId": 27,
+                "targetPos": {
+                    "x": 8,
+                    "y": 5
+                },
+                "actionType": "BUILD"
+            },
+            {
+                "cityId": 27,
+                "targetPos": {
+                    "x": 8,
+                    "y": 5
+                },
+                "actionType": "CLEAR_FOREST"
+            },
+            {
+                "cityId": 27,
+                "targetPos": {
+                    "x": 7,
+                    "y": 2
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 27,
+                "targetPos": {
+                    "x": 7,
+                    "y": 3
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 27,
+                "targetPos": {
+                    "x": 7,
+                    "y": 5
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 27,
+                "targetPos": {
+                    "x": 7,
+                    "y": 6
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 27,
+                "targetPos": {
+                    "x": 9,
+                    "y": 3
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 27,
+                "targetPos": {
+                    "x": 9,
+                    "y": 4
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "cityId": 27,
+                "targetPos": {
+                    "x": 10,
+                    "y": 4
+                },
+                "actionType": "DESTROY"
+            },
+            {
+                "resource": "ANIMAL",
+                "cityId": 27,
+                "targetPos": {
+                    "x": 6,
+                    "y": 2
+                },
+                "actionType": "RESOURCE_GATHERING"
+            },
+            {
+                "resource": "FRUIT",
+                "cityId": 27,
+                "targetPos": {
+                    "x": 7,
+                    "y": 4
+                },
+                "actionType": "RESOURCE_GATHERING"
+            },
+            {
+                "resource": "FISH",
+                "cityId": 27,
+                "targetPos": {
+                    "x": 8,
+                    "y": 6
+                },
+                "actionType": "RESOURCE_GATHERING"
+            },
+            {
+                "unit_type": "WARRIOR",
+                "cityId": 27,
+                "targetPos": {
+                    "x": 8,
+                    "y": 4
+                },
+                "actionType": "SPAWN"
+            },
+            {
+                "unit_type": "RIDER",
+                "cityId": 27,
+                "targetPos": {
+                    "x": 8,
+                    "y": 4
+                },
+                "actionType": "SPAWN"
+            },
+            {
+                "unit_type": "DEFENDER",
+                "cityId": 27,
+                "targetPos": {
+                    "x": 8,
+                    "y": 4
+                },
+                "actionType": "SPAWN"
+            },
+            {
+                "unit_type": "ARCHER",
+                "cityId": 27,
+                "targetPos": {
+                    "x": 8,
+                    "y": 4
+                },
+                "actionType": "SPAWN"
+            }
+        ]
+    },
+    "unitActions": {
+        "34": [
+            {
+                "unitId": 34,
+                "actionType": "DISBAND"
+            },
+            {
+                "destination": {
+                    "x": 0,
+                    "y": 9
+                },
+                "unitId": 34,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 10
+                },
+                "unitId": 34,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 9
+                },
+                "unitId": 34,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 1,
+                    "y": 9
+                },
+                "unitId": 34,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 0,
+                    "y": 10
+                },
+                "unitId": 34,
+                "actionType": "MOVE"
+            }
+        ],
+        "36": [
+            {
+                "unitId": 36,
+                "actionType": "DISBAND"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 4
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 5,
+                    "y": 4
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 5
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 6
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 6
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 7
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 7
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 3
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 5
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 4
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 3
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 4,
+                    "y": 4
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 3
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 4,
+                    "y": 3
+                },
+                "unitId": 36,
+                "actionType": "MOVE"
+            }
+        ],
+        "54": [
+            {
+                "unitId": 54,
+                "actionType": "DISBAND"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 4
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 5
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 8,
+                    "y": 6
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 7,
+                    "y": 6
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 6
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 7
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 5,
+                    "y": 7
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 9,
+                    "y": 6
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 9,
+                    "y": 5
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 8,
+                    "y": 7
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 7,
+                    "y": 7
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 3
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 5,
+                    "y": 5
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 5,
+                    "y": 4
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 8,
+                    "y": 5
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 8,
+                    "y": 4
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 7,
+                    "y": 3
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 9,
+                    "y": 7
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 5,
+                    "y": 6
+                },
+                "unitId": 54,
+                "actionType": "MOVE"
+            }
+        ],
+        "39": [
+            {
+                "unitId": 39,
+                "actionType": "DISBAND"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 3
+                },
+                "unitId": 39,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 2
+                },
+                "unitId": 39,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 1
+                },
+                "unitId": 39,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 3
+                },
+                "unitId": 39,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 1
+                },
+                "unitId": 39,
+                "actionType": "MOVE"
+            }
+        ],
+        "55": [
+            {
+                "unitId": 55,
+                "actionType": "DISBAND"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 8
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 0,
+                    "y": 8
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 9
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 0,
+                    "y": 9
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 10
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 10
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 3,
+                    "y": 7
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 9
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 1,
+                    "y": 9
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 7
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 0,
+                    "y": 6
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 1,
+                    "y": 8
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 2,
+                    "y": 6
+                },
+                "unitId": 55,
+                "actionType": "MOVE"
+            }
+        ],
+        "40": [
+            {
+                "unitId": 40,
+                "actionType": "DISBAND"
+            },
+            {
+                "destination": {
+                    "x": 9,
+                    "y": 9
+                },
+                "unitId": 40,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 10,
+                    "y": 8
+                },
+                "unitId": 40,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 9,
+                    "y": 10
+                },
+                "unitId": 40,
+                "actionType": "MOVE"
+            }
+        ],
+        "43": [
+            {
+                "unitId": 43,
+                "actionType": "DISBAND"
+            },
+            {
+                "destination": {
+                    "x": 4,
+                    "y": 2
+                },
+                "unitId": 43,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 3
+                },
+                "unitId": 43,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 2
+                },
+                "unitId": 43,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 5,
+                    "y": 4
+                },
+                "unitId": 43,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 5,
+                    "y": 2
+                },
+                "unitId": 43,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 4,
+                    "y": 4
+                },
+                "unitId": 43,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 4,
+                    "y": 3
+                },
+                "unitId": 43,
+                "actionType": "MOVE"
+            },
+            {
+                "unitId": 43,
+                "actionType": "RECOVER"
+            }
+        ],
+        "30": [
+            {
+                "unitId": 30,
+                "actionType": "DISBAND"
+            },
+            {
+                "destination": {
+                    "x": 7,
+                    "y": 3
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 8,
+                    "y": 4
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 8,
+                    "y": 3
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 9,
+                    "y": 3
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 9,
+                    "y": 4
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 8,
+                    "y": 5
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 7,
+                    "y": 2
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 3
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 6,
+                    "y": 2
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 7,
+                    "y": 1
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "destination": {
+                    "x": 9,
+                    "y": 5
+                },
+                "unitId": 30,
+                "actionType": "MOVE"
+            },
+            {
+                "unitId": 30,
+                "actionType": "RECOVER"
+            }
+        ]
+    },
+    "tribeActions": [
+        {
+            "position": {
+                "x": 0,
+                "y": 3
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 0,
+                "y": 5
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 0,
+                "y": 8
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 0,
+                "y": 10
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 1,
+                "y": 3
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 1,
+                "y": 4
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 1,
+                "y": 10
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 2,
+                "y": 2
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 2,
+                "y": 3
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 2,
+                "y": 5
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 2,
+                "y": 6
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 2,
+                "y": 7
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 3,
+                "y": 0
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 3,
+                "y": 1
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 3,
+                "y": 2
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 3,
+                "y": 3
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 3,
+                "y": 4
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 3,
+                "y": 5
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 3,
+                "y": 9
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 4,
+                "y": 1
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 4,
+                "y": 2
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 5,
+                "y": 0
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 5,
+                "y": 2
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 6,
+                "y": 1
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 6,
+                "y": 2
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 7,
+                "y": 4
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 8,
+                "y": 5
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 8,
+                "y": 10
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 9,
+                "y": 5
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 9,
+                "y": 6
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 9,
+                "y": 9
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 9,
+                "y": 10
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 10,
+                "y": 5
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 10,
+                "y": 7
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 10,
+                "y": 8
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 10,
+                "y": 9
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "position": {
+                "x": 10,
+                "y": 10
+            },
+            "tribeId": 0,
+            "actionType": "BUILD_ROAD"
+        },
+        {
+            "numStars": 1,
+            "targetID": 1,
+            "tribeId": 0,
+            "actionType": "SEND_STARS"
+        },
+        {
+            "numStars": 2,
+            "targetID": 1,
+            "tribeId": 0,
+            "actionType": "SEND_STARS"
+        },
+        {
+            "tribeId": 0,
+            "actionType": "END_TURN"
+        }
+    ],
+    "board": {
+        "terrains": [
+            [
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "SHALLOW_WATER",
+                "PLAIN",
+                "PLAIN",
+                "PLAIN",
+                "SHALLOW_WATER",
+                "SHALLOW_WATER",
+                "PLAIN",
+                "MOUNTAIN",
+                "PLAIN"
+            ],
+            [
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "SHALLOW_WATER",
+                "PLAIN",
+                "PLAIN",
+                "CITY",
+                "MOUNTAIN",
+                "PLAIN",
+                "MOUNTAIN",
+                "MOUNTAIN",
+                "PLAIN"
+            ],
+            [
+                "SHALLOW_WATER",
+                "MOUNTAIN",
+                "PLAIN",
+                "FOREST",
+                "MOUNTAIN",
+                "PLAIN",
+                "FOREST",
+                "FOREST",
+                "CITY",
+                "SHALLOW_WATER",
+                "SHALLOW_WATER"
+            ],
+            [
+                "FOREST",
+                "FOREST",
+                "FOREST",
+                "PLAIN",
+                "PLAIN",
+                "PLAIN",
+                "PLAIN",
+                "SHALLOW_WATER",
+                "SHALLOW_WATER",
+                "PLAIN",
+                "SHALLOW_WATER"
+            ],
+            [
+                "MOUNTAIN",
+                "VILLAGE",
+                "FOREST",
+                "PLAIN",
+                "FOREST",
+                "PLAIN",
+                "SHALLOW_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "SHALLOW_WATER",
+                "DEEP_WATER"
+            ],
+            [
+                "FOREST",
+                "PLAIN",
+                "PLAIN",
+                "FOREST",
+                "CITY",
+                "SHALLOW_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER"
+            ],
+            [
+                "MOUNTAIN",
+                "PLAIN",
+                "PLAIN",
+                "FOREST",
+                "SHALLOW_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "SHALLOW_WATER",
+                "SHALLOW_WATER"
+            ],
+            [
+                "MOUNTAIN",
+                "MOUNTAIN",
+                "MOUNTAIN",
+                "PLAIN",
+                "PLAIN",
+                "SHALLOW_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "SHALLOW_WATER",
+                "MOUNTAIN"
+            ],
+            [
+                "SHALLOW_WATER",
+                "SHALLOW_WATER",
+                "MOUNTAIN",
+                "MOUNTAIN",
+                "CITY",
+                "FOREST",
+                "SHALLOW_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "SHALLOW_WATER",
+                "FOREST"
+            ],
+            [
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "SHALLOW_WATER",
+                "PLAIN",
+                "PLAIN",
+                "PLAIN",
+                "SHALLOW_WATER",
+                "DEEP_WATER",
+                "PLAIN",
+                "PLAIN"
+            ],
+            [
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "DEEP_WATER",
+                "SHALLOW_WATER",
+                "PLAIN",
+                "MOUNTAIN",
+                "FOREST",
+                "PLAIN",
+                "PLAIN",
+                "FOREST"
+            ]
+        ],
+        "resources": [
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                "ANIMAL",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                "FISH",
+                "ORE",
+                "CROPS",
+                "ANIMAL",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                "ANIMAL",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "WHALES",
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                "ANIMAL",
+                null,
+                "FISH",
+                null,
+                null,
+                null,
+                null,
+                null,
+                "FISH"
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                "FRUIT",
+                null,
+                null,
+                "RUINS",
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "FISH",
+                "WHALES",
+                "WHALES",
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                "CROPS",
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        ],
+        "buildings": [
+            [
+                null,
+                null,
+                null,
+                "TOWER_OF_WISDOM",
+                "EYE_OF_GOD",
+                "CUSTOMS_HOUSE",
+                "PORT",
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                "MINE",
+                null,
+                null,
+                null,
+                null,
+                "PORT",
+                "PORT"
+            ],
+            [
+                null,
+                null,
+                null,
+                "GATE_OF_POWER",
+                null,
+                "FORGE",
+                null,
+                "PORT",
+                "PORT",
+                "CUSTOMS_HOUSE",
+                "PORT"
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                "MOUNTAIN_TEMPLE",
+                "ALTAR_OF_PEACE",
+                null,
+                "PORT",
+                "WATER_TEMPLE",
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                "PORT",
+                "CUSTOMS_HOUSE",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                "PARK_OF_FORTUNE",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        ],
+        "units": [
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                0,
+                0,
+                13,
+                0,
+                0,
+                53,
+                55,
+                0,
+                0,
+                34
+            ],
+            [
+                0,
+                0,
+                39,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                50,
+                0,
+                0
+            ],
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                36,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                0,
+                0,
+                43,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                0,
+                0,
+                0,
+                56,
+                54,
+                0,
+                0,
+                0,
+                46,
+                0
+            ],
+            [
+                0,
+                0,
+                30,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                52,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                40,
+                41
+            ]
+        ],
+        "tribes": [
+            {
+                "citiesID": [
+                    1,
+                    8,
+                    27
+                ],
+                "capitalID": 1,
+                "tribe": "IMPERIUS",
+                "techTree": {
+                    "researched": [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    "everythingResearched": true
+                },
+                "stars": 3,
+                "winner": "INCOMPLETE",
+                "score": 11098,
+                "obsGrid": [
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                ],
+                "connectedCities": [
+                    27,
+                    8
+                ],
+                "monuments": {
+                    "PARK_OF_FORTUNE": "BUILT",
+                    "EYE_OF_GOD": "BUILT",
+                    "GRAND_BAZAR": "UNAVAILABLE",
+                    "ALTAR_OF_PEACE": "BUILT",
+                    "TOWER_OF_WISDOM": "BUILT",
+                    "EMPERORS_TOMB": "UNAVAILABLE",
+                    "GATE_OF_POWER": "BUILT"
+                },
+                "tribesMet": [
+                    0,
+                    1
+                ],
+                "extraUnits": [],
+                "nKills": 11,
+                "nPacifistCount": 1,
+                "starsSent": 0,
+                "hasDeclaredWar": false,
+                "nWarsDeclared": 5,
+                "nStarsSent": 48,
+                "actorId": 0,
+                "tribeId": 0
+            },
+            {
+                "citiesID": [
+                    3
+                ],
+                "capitalID": 3,
+                "tribe": "XIN_XI",
+                "techTree": {
+                    "researched": [
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false
+                    ],
+                    "everythingResearched": false
+                },
+                "stars": 0,
+                "winner": "INCOMPLETE",
+                "score": 680,
+                "obsGrid": [
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ],
+                    [
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true,
+                        true
+                    ]
+                ],
+                "connectedCities": [],
+                "monuments": {},
+                "tribesMet": [],
+                "extraUnits": [],
+                "nKills": 0,
+                "nPacifistCount": 0,
+                "starsSent": 0,
+                "hasDeclaredWar": false,
+                "nWarsDeclared": 0,
+                "nStarsSent": 0,
+                "actorId": 1,
+                "tribeId": 1
+            }
+        ],
+        "capitalIDs": [
+            1,
+            3
+        ],
+        "tileCityId": [
+            [
+                -1,
+                -1,
+                -1,
+                8,
+                8,
+                8,
+                8,
+                1,
+                1,
+                1,
+                1
+            ],
+            [
+                -1,
+                -1,
+                -1,
+                8,
+                8,
+                8,
+                8,
+                1,
+                1,
+                1,
+                1
+            ],
+            [
+                -1,
+                -1,
+                -1,
+                8,
+                8,
+                8,
+                8,
+                1,
+                1,
+                1,
+                1
+            ],
+            [
+                -1,
+                -1,
+                -1,
+                8,
+                8,
+                8,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            [
+                -1,
+                -1,
+                -1,
+                3,
+                3,
+                3,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            [
+                -1,
+                -1,
+                -1,
+                3,
+                3,
+                3,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            [
+                -1,
+                -1,
+                27,
+                3,
+                3,
+                3,
+                27,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            [
+                -1,
+                -1,
+                27,
+                27,
+                27,
+                27,
+                27,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            [
+                -1,
+                -1,
+                27,
+                27,
+                27,
+                27,
+                27,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            [
+                -1,
+                -1,
+                27,
+                27,
+                27,
+                27,
+                27,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            [
+                -1,
+                -1,
+                27,
+                27,
+                27,
+                27,
+                27,
+                -1,
+                -1,
+                -1,
+                -1
+            ]
+        ],
+        "gameActors": {
+            "1": {
+                "level": 5,
+                "population": 4,
+                "population_need": 6,
+                "isCapital": true,
+                "production": 9,
+                "hasWalls": false,
+                "bound": 2,
+                "pointsWorth": 0,
+                "unitsID": [
+                    30,
+                    34,
+                    41,
+                    43,
+                    46,
+                    50
+                ],
+                "buildings": [
+                    {
+                        "position": {
+                            "x": 2,
+                            "y": 9
+                        },
+                        "type": "PORT",
+                        "cityId": 1
+                    },
+                    {
+                        "position": {
+                            "x": 3,
+                            "y": 7
+                        },
+                        "type": "PORT",
+                        "cityId": 1
+                    },
+                    {
+                        "position": {
+                            "x": 3,
+                            "y": 8
+                        },
+                        "type": "PORT",
+                        "cityId": 1
+                    },
+                    {
+                        "position": {
+                            "x": 3,
+                            "y": 10
+                        },
+                        "type": "PORT",
+                        "cityId": 1
+                    },
+                    {
+                        "position": {
+                            "x": 3,
+                            "y": 9
+                        },
+                        "type": "CUSTOMS_HOUSE",
+                        "cityId": 1
+                    },
+                    {
+                        "position": {
+                            "x": 2,
+                            "y": 10
+                        },
+                        "type": "PORT",
+                        "cityId": 1
+                    }
+                ],
+                "actorId": 1,
+                "tribeId": 0,
+                "position": {
+                    "x": 2,
+                    "y": 8
+                }
+            },
+            "34": {
+                "ATK": 2,
+                "DEF": 2,
+                "MOV": 1,
+                "RANGE": 1,
+                "COST": 2,
+                "maxHP": 10,
+                "currentHP": 10,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 1,
+                "status": "FRESH",
+                "actorId": 34,
+                "tribeId": 0,
+                "position": {
+                    "x": 1,
+                    "y": 10
+                }
+            },
+            "3": {
+                "level": 2,
+                "population": 0,
+                "population_need": 3,
+                "isCapital": true,
+                "production": 0,
+                "hasWalls": false,
+                "bound": 1,
+                "pointsWorth": 0,
+                "unitsID": [],
+                "buildings": [],
+                "actorId": 3,
+                "tribeId": 1,
+                "position": {
+                    "x": 5,
+                    "y": 4
+                }
+            },
+            "36": {
+                "ATK": 2,
+                "DEF": 1,
+                "MOV": 2,
+                "RANGE": 1,
+                "COST": 3,
+                "maxHP": 10,
+                "currentHP": 10,
+                "kills": 2,
+                "isVeteran": false,
+                "cityId": 27,
+                "status": "FRESH",
+                "actorId": 36,
+                "tribeId": 0,
+                "position": {
+                    "x": 4,
+                    "y": 5
+                }
+            },
+            "39": {
+                "ATK": 1,
+                "DEF": 3,
+                "MOV": 1,
+                "RANGE": 1,
+                "COST": 3,
+                "maxHP": 15,
+                "currentHP": 15,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 8,
+                "status": "FRESH",
+                "actorId": 39,
+                "tribeId": 0,
+                "position": {
+                    "x": 2,
+                    "y": 2
+                }
+            },
+            "8": {
+                "level": 5,
+                "population": 3,
+                "population_need": 6,
+                "isCapital": false,
+                "production": 3,
+                "hasWalls": false,
+                "bound": 2,
+                "pointsWorth": 0,
+                "unitsID": [
+                    13,
+                    39,
+                    53,
+                    55
+                ],
+                "buildings": [
+                    {
+                        "position": {
+                            "x": 2,
+                            "y": 4
+                        },
+                        "type": "MINE",
+                        "cityId": 8
+                    },
+                    {
+                        "position": {
+                            "x": 0,
+                            "y": 6
+                        },
+                        "type": "PORT",
+                        "cityId": 8
+                    },
+                    {
+                        "position": {
+                            "x": 0,
+                            "y": 4
+                        },
+                        "type": "EYE_OF_GOD",
+                        "cityId": 8
+                    },
+                    {
+                        "position": {
+                            "x": 0,
+                            "y": 5
+                        },
+                        "type": "CUSTOMS_HOUSE",
+                        "cityId": 8
+                    },
+                    {
+                        "position": {
+                            "x": 3,
+                            "y": 3
+                        },
+                        "type": "GATE_OF_POWER",
+                        "cityId": 8
+                    },
+                    {
+                        "position": {
+                            "x": 3,
+                            "y": 5
+                        },
+                        "type": "FORGE",
+                        "cityId": 8
+                    },
+                    {
+                        "position": {
+                            "x": 0,
+                            "y": 3
+                        },
+                        "type": "TOWER_OF_WISDOM",
+                        "cityId": 8
+                    }
+                ],
+                "actorId": 8,
+                "tribeId": 0,
+                "position": {
+                    "x": 1,
+                    "y": 5
+                }
+            },
+            "40": {
+                "ATK": 2,
+                "DEF": 2,
+                "MOV": 1,
+                "RANGE": 1,
+                "COST": 2,
+                "maxHP": 10,
+                "currentHP": 10,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 27,
+                "status": "FRESH",
+                "actorId": 40,
+                "tribeId": 0,
+                "position": {
+                    "x": 10,
+                    "y": 9
+                }
+            },
+            "41": {
+                "ATK": 2,
+                "DEF": 1,
+                "MOV": 2,
+                "RANGE": 1,
+                "COST": 3,
+                "maxHP": 10,
+                "currentHP": 10,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 1,
+                "status": "MOVED",
+                "actorId": 41,
+                "tribeId": 0,
+                "position": {
+                    "x": 10,
+                    "y": 10
+                }
+            },
+            "43": {
+                "ATK": 2,
+                "DEF": 2,
+                "MOV": 1,
+                "RANGE": 1,
+                "COST": 2,
+                "maxHP": 10,
+                "currentHP": 1,
+                "kills": 1,
+                "isVeteran": false,
+                "cityId": 1,
+                "status": "FRESH",
+                "actorId": 43,
+                "tribeId": 0,
+                "position": {
+                    "x": 5,
+                    "y": 3
+                }
+            },
+            "13": {
+                "ATK": 2,
+                "DEF": 2,
+                "MOV": 1,
+                "RANGE": 1,
+                "COST": 2,
+                "maxHP": 15,
+                "currentHP": 15,
+                "kills": 4,
+                "isVeteran": true,
+                "cityId": 8,
+                "status": "MOVED",
+                "actorId": 13,
+                "tribeId": 0,
+                "position": {
+                    "x": 1,
+                    "y": 3
+                }
+            },
+            "46": {
+                "baseLandUnit": "RIDER",
+                "ATK": 1,
+                "DEF": 1,
+                "MOV": 2,
+                "RANGE": 2,
+                "COST": 0,
+                "maxHP": 10,
+                "currentHP": 10,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 1,
+                "status": "MOVED",
+                "actorId": 46,
+                "tribeId": 0,
+                "position": {
+                    "x": 7,
+                    "y": 9
+                }
+            },
+            "50": {
+                "baseLandUnit": "RIDER",
+                "ATK": 1,
+                "DEF": 1,
+                "MOV": 2,
+                "RANGE": 2,
+                "COST": 0,
+                "maxHP": 10,
+                "currentHP": 10,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 1,
+                "status": "MOVED",
+                "actorId": 50,
+                "tribeId": 0,
+                "position": {
+                    "x": 3,
+                    "y": 8
+                }
+            },
+            "52": {
+                "baseLandUnit": "RIDER",
+                "ATK": 2,
+                "DEF": 2,
+                "MOV": 3,
+                "RANGE": 2,
+                "COST": 5,
+                "maxHP": 10,
+                "currentHP": 7,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 27,
+                "status": "MOVED",
+                "actorId": 52,
+                "tribeId": 0,
+                "position": {
+                    "x": 9,
+                    "y": 0
+                }
+            },
+            "53": {
+                "ATK": 1,
+                "DEF": 3,
+                "MOV": 1,
+                "RANGE": 1,
+                "COST": 3,
+                "maxHP": 15,
+                "currentHP": 15,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 8,
+                "status": "FINISHED",
+                "actorId": 53,
+                "tribeId": 0,
+                "position": {
+                    "x": 1,
+                    "y": 6
+                }
+            },
+            "54": {
+                "baseLandUnit": "DEFENDER",
+                "ATK": 1,
+                "DEF": 1,
+                "MOV": 2,
+                "RANGE": 2,
+                "COST": 0,
+                "maxHP": 15,
+                "currentHP": 15,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 27,
+                "status": "FRESH",
+                "actorId": 54,
+                "tribeId": 0,
+                "position": {
+                    "x": 7,
+                    "y": 5
+                }
+            },
+            "55": {
+                "ATK": 2,
+                "DEF": 1,
+                "MOV": 2,
+                "RANGE": 1,
+                "COST": 3,
+                "maxHP": 10,
+                "currentHP": 10,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 8,
+                "status": "FRESH",
+                "actorId": 55,
+                "tribeId": 0,
+                "position": {
+                    "x": 1,
+                    "y": 7
+                }
+            },
+            "56": {
+                "ATK": 1,
+                "DEF": 3,
+                "MOV": 1,
+                "RANGE": 1,
+                "COST": 3,
+                "maxHP": 15,
+                "currentHP": 15,
+                "kills": 0,
+                "isVeteran": false,
+                "cityId": 27,
+                "status": "FINISHED",
+                "actorId": 56,
+                "tribeId": 0,
+                "position": {
+                    "x": 7,
+                    "y": 4
+                }
+            },
+            "27": {
+                "level": 5,
+                "population": 2,
+                "population_need": 6,
+                "isCapital": false,
+                "production": 3,
+                "hasWalls": true,
+                "bound": 2,
+                "pointsWorth": 0,
+                "unitsID": [
+                    36,
+                    40,
+                    52,
+                    54,
+                    56
+                ],
+                "buildings": [
+                    {
+                        "position": {
+                            "x": 7,
+                            "y": 3
+                        },
+                        "type": "ALTAR_OF_PEACE",
+                        "cityId": 27
+                    },
+                    {
+                        "position": {
+                            "x": 9,
+                            "y": 3
+                        },
+                        "type": "PORT",
+                        "cityId": 27
+                    },
+                    {
+                        "position": {
+                            "x": 7,
+                            "y": 5
+                        },
+                        "type": "PORT",
+                        "cityId": 27
+                    },
+                    {
+                        "position": {
+                            "x": 10,
+                            "y": 4
+                        },
+                        "type": "PARK_OF_FORTUNE",
+                        "cityId": 27
+                    },
+                    {
+                        "level": 2,
+                        "turnsToScore": 3,
+                        "position": {
+                            "x": 7,
+                            "y": 6
+                        },
+                        "type": "WATER_TEMPLE",
+                        "cityId": 27
+                    },
+                    {
+                        "position": {
+                            "x": 9,
+                            "y": 4
+                        },
+                        "type": "CUSTOMS_HOUSE",
+                        "cityId": 27
+                    },
+                    {
+                        "level": 1,
+                        "turnsToScore": 3,
+                        "position": {
+                            "x": 7,
+                            "y": 2
+                        },
+                        "type": "MOUNTAIN_TEMPLE",
+                        "cityId": 27
+                    }
+                ],
+                "actorId": 27,
+                "tribeId": 0,
+                "position": {
+                    "x": 8,
+                    "y": 4
+                }
+            },
+            "30": {
+                "ATK": 2,
+                "DEF": 1,
+                "MOV": 2,
+                "RANGE": 1,
+                "COST": 3,
+                "maxHP": 10,
+                "currentHP": 9,
+                "kills": 2,
+                "isVeteran": false,
+                "cityId": 1,
+                "status": "FRESH",
+                "actorId": 30,
+                "tribeId": 0,
+                "position": {
+                    "x": 8,
+                    "y": 2
+                }
+            }
+        },
+        "size": 11,
+        "activeTribeID": 0,
+        "actorIDcounter": 56,
+        "tradeNetwork": {
+            "networkTiles": [
+                [
+                    false,
+                    false,
+                    false,
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    false,
+                    false,
+                    false
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    false,
+                    false
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    true,
+                    true,
+                    true,
+                    false,
+                    true
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                ],
+                [
+                    false,
+                    true,
+                    false,
+                    false,
+                    true,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    false,
+                    true,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    false,
+                    true,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    true,
+                    true,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                ],
+                [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                ]
+            ],
+            "size": 11
+        },
+        "diplomacy": {
+            "allegianceStatus": [
+                [
+                    0,
+                    -60
+                ],
+                [
+                    -60,
+                    0
+                ]
+            ]
+        },
+        "isNative": false
+    },
+    "ranking": [
+        {
+            "result": "INCOMPLETE",
+            "id": 0,
+            "score": 11098,
+            "numTechsResearched": 24,
+            "numCities": 3,
+            "production": 31,
+            "numWars": 5,
+            "numStars": 48
+        },
+        {
+            "result": "INCOMPLETE",
+            "id": 1,
+            "score": 680,
+            "numTechsResearched": 2,
+            "numCities": 1,
+            "production": 4,
+            "numWars": 0,
+            "numStars": 0
+        }
+    ]
+}

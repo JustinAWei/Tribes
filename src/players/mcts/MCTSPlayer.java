@@ -1,11 +1,16 @@
 package players.mcts;
 
+import com.google.gson.*;
+import core.Types;
 import core.actions.Action;
 import core.actions.tribeactions.EndTurn;
 import core.game.Game;
 import core.game.GameState;
+import org.json.JSONObject;
 import players.Agent;
 import utils.ElapsedCpuTimer;
+import utils.GameStateSerializer;
+import utils.PostRequestSender;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -30,6 +35,23 @@ public class MCTSPlayer extends Agent {
     }
 
     public Action act(GameState gs, ElapsedCpuTimer ect) {
+        PostRequestSender postRequestSender = new PostRequestSender();
+        String url = "http://localhost:8000/receive";
+        JsonObject jsonObject = new JsonObject();
+
+        // Serialize the GameState
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(GameState.class, new GameStateSerializer())
+                .registerTypeAdapter(Types.TRIBE.class, (JsonSerializer<Types.TRIBE>) (src, typeOfSrc, context) ->
+                        new JsonPrimitive(src.toString()))
+                .registerTypeAdapter(Types.RESULT.class, (JsonSerializer<Types.RESULT>) (src, typeOfSrc, context) ->
+                        new JsonPrimitive(src.toString()))
+                .create();
+        JsonElement gameStateJson = gson.toJsonTree(gs);;
+        jsonObject.add("gameState", gameStateJson); // Add serialized game state
+
+        String response = postRequestSender.sendPostRequest(url, jsonObject.toString());
+
         //Gather all available actions:
         ArrayList<Action> allActions = gs.getAllAvailableActions();
 

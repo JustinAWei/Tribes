@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 import json
 from pprint import pprint
+from datetime import datetime
 
 # Create FastAPI app
 app = FastAPI()
@@ -148,11 +149,16 @@ class FilteredActions(BaseModel):
     city_id: str
     filtered_actions: List[Dict[str, Any]]
 
+# request_counter = 0
+
 @app.post("/receive")
 async def receive_data(request: Request):
     """
     Process and filter city actions from game state
     """
+    # global request_counter
+    # request_counter += 1
+
     # Extract request data
     data = await request.json()
 
@@ -160,6 +166,17 @@ async def receive_data(request: Request):
         # Parse game state
         gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']
         # pprint(gs)
+
+        # Save game state only every 20th request
+        # if request_counter % 20 == 0:
+        #     # Create timestamped filename
+        #     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        #     filename = f'game_state_{timestamp}.json'
+        #     
+        #     # Save game state to file
+        #     with open(filename, 'w') as f:
+        #         json.dump(gs, f, indent=4)
+        #     print(f"Game state saved to '{filename}'")
 
         BOARD_LEN = len(gs['board']['terrains'])
         BOARD_SIZE = BOARD_LEN ** 2
