@@ -7,6 +7,7 @@ import core.actions.cityactions.Build;
 import core.actions.cityactions.CityAction;
 import core.actions.cityactions.ResourceGathering;
 import core.actions.cityactions.Spawn;
+import core.actions.tribeactions.BuildRoad;
 import core.actions.tribeactions.EndTurn;
 import core.actions.tribeactions.ResearchTech;
 import core.actions.unitactions.Attack;
@@ -158,7 +159,7 @@ public class MonteCarloAgent extends Agent {
                                 filteredActions.add(a);
                             }
                         }
-                        else if (actionType == Types.ACTION.CAPTURE) {
+                        else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN) {
                             filteredActions.add(a);
                         }
                     }
@@ -171,6 +172,14 @@ public class MonteCarloAgent extends Agent {
                        if (techTypeInt == typeInfo) {
                            filteredActions.add(a);
                        }
+                    }
+                    else if (actionType == Types.ACTION.BUILD_ROAD) {
+                        // check position
+                        BuildRoad buildRoad = (BuildRoad) a;
+                        boolean positionMatches = buildRoad.getPosition().x == x1 && buildRoad.getPosition().y == y1;
+                        if (positionMatches) {
+                            filteredActions.add(a);
+                        }
                     }
                     else if (actionType == Types.ACTION.END_TURN) {
                         filteredActions.add(a);

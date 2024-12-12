@@ -66,6 +66,10 @@ async def receive_data(request: Request):
             if action.get('actionType') == 'RESEARCH_TECH':
                 tech_type = TECH_TYPES[action.get('tech')]
                 valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], MASK, MASK, MASK, MASK, tech_type])
+            elif action.get('actionType') == 'BUILD_ROAD':
+                # get position
+                x, y = action.get('position').get('x'), action.get('position').get('y')
+                valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], x, y, MASK, MASK, MASK])
             else:
                 valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], MASK, MASK, MASK, MASK, MASK])
 
@@ -119,12 +123,12 @@ async def receive_data(request: Request):
 
                 elif 'targetId' in action:
                     x2, y2 = get_actor_x_y(int(action['targetId']), gs)
-
+                    
                 elif 'cityId' in action:
                     x2, y2 = get_actor_x_y(int(action['cityId']), gs)
 
-                elif action.get('actionType') == 'CAPTURE':
-                    # Assumption: Captures are always to the same position as the unit
+                elif action.get('actionType') in ['CAPTURE', 'RECOVER', 'EXAMINE', 'MAKE_VETERAN']:
+                    # Assumption: These are always to the same position as the unit
                     x2, y2 = x1, y1
 
                 valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])

@@ -22,12 +22,17 @@ ACTION_TYPES = {
     "RESOURCE_GATHERING": 6,
     "SPAWN": 7,
 
+    "BUILD_ROAD": 8,
     "END_TURN": 9,
     "RESEARCH_TECH": 10,
 
+
     "ATTACK": 13,
     "CAPTURE": 14,
-    "MOVE": 20
+    "EXAMINE": 17,
+    "MAKE_VETERAN": 19,
+    "MOVE": 20,
+    "RECOVER": 21
 }
 
 # Reversed dictionary for action categories
