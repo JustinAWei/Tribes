@@ -1,6 +1,26 @@
 import numpy as np
 
-def game_state_to_vector(game_state):
+# Constants for mapping strings to integers
+TERRAIN_MAP = {
+    'PLAIN': 0, 'SHALLOW_WATER': 1, 'DEEP_WATER': 2, 'MOUNTAIN': 3,
+    'VILLAGE': 4, 'CITY': 5, 'FOREST': 6, 'FOG': 7
+}
+
+BUILDING_MAP = {
+    'PORT': 0, 'MINE': 1, 'FORGE': 2, 'FARM': 3, 'WINDMILL': 4,
+    'CUSTOMS_HOUSE': 5, 'LUMBER_HUT': 6, 'SAWMILL': 7, 'TEMPLE': 8,
+    'WATER_TEMPLE': 9, 'FOREST_TEMPLE': 10, 'MOUNTAIN_TEMPLE': 11,
+    'ALTAR_OF_PEACE': 12, 'EMPERORS_TOMB': 13, 'EYE_OF_GOD': 14,
+    'GATE_OF_POWER': 15, 'GRAND_BAZAR': 16, 'PARK_OF_FORTUNE': 17,
+    'TOWER_OF_WISDOM': 18
+}
+
+RESOURCE_MAP = {
+    'FISH': 0, 'FRUIT': 1, 'ANIMAL': 2, 'WHALES': 3,
+    'ORE': 5, 'CROPS': 6, 'RUINS': 7
+}
+
+def game_state_to_vector(gs):
     """
     Vectorize the game state into a numpy array. Below is the structure of the game state (and below that is the vectorization of the relevant features since not all features are relevant to the game for now).
 
@@ -118,7 +138,7 @@ def game_state_to_vector(game_state):
     - board
         - terrain -> n x n x 1 (int ranging from 0 to 7 for terrain type)
         - resources -> n x n x 1 (int ranging from 0 to 8 for resource types including None)
-        - buildings -> n x n x 1 (int ranging from 0 to 20 for building types including None)
+        - buildings -> n x n x 1 (int ranging from 0 to 19 for building types including None)
         - units -> n x n x 12 for the 12 attributes of a unit
             - ATK -> int, no specific range, but typically between 0 to 5
             - DEF -> int, no specific range, but typically between 0 to 5
@@ -174,22 +194,100 @@ def game_state_to_vector(game_state):
     - Regular NN where we flatten everything -> bit simpler implementation, but loses performance
     
     """
-    # # Initialize vector components (adjust these based on your game state structure)
-    # vector = []
-    # 
-    # # Example features (modify these according to your actual game state):
-    # # Player position
-    # vector.extend([
-    #     game_state.get('player', {}).get('x', 0) / 1000,  # Normalize position
-    #     game_state.get('player', {}).get('y', 0) / 1000,
-    # ])
-    # 
-    # # Player velocity/direction
-    # vector.extend([
-    #     game_state.get('player', {}).get('velocityX', 0) / 10,
-    #     game_state.get('player', {}).get('velocityY', 0) / 10,
-    # ])
-    # 
-    # # Other game state features...
-    # 
-    # return np.array(vector, dtype=np.float32)
+    board_size = len(gs['board']['terrains'])
+    
+    # Initialize arrays with appropriate shapes
+    terrain_array = np.zeros((board_size, board_size, 1), dtype=np.int32)
+    resource_array = np.zeros((board_size, board_size, 1), dtype=np.int32)
+    building_array = np.zeros((board_size, board_size, 1), dtype=np.int32)
+    unit_array = np.full((board_size, board_size, 12), -1, dtype=np.int32)  # -1 for no unit
+    city_array = np.full((board_size, board_size, 8), -1, dtype=np.int32)   # -1 for no city
+    tile_ownership = np.full((board_size, board_size, 2), -1, dtype=np.int32)
+    trade_network = np.zeros((board_size, board_size, 1), dtype=np.int32)
+
+    # Fill terrain array
+    for y, row in enumerate(gs['board']['terrains']):
+        for x, cell in enumerate(row):
+            terrain_array[y, x, 0] = TERRAIN_MAP.get(cell, 0)
+
+    # Fill resource array
+    for y, row in enumerate(gs['board']['resources']):
+        for x, cell in enumerate(row):
+            if cell is not None:
+                resource_array[y, x, 0] = RESOURCE_MAP.get(cell, 0)
+
+    # Fill building array
+    for y, row in enumerate(gs['board']['buildings']):
+        for x, cell in enumerate(row):
+            if cell is not None:
+                building_array[y, x, 0] = BUILDING_MAP.get(cell, 0)
+
+    # Fill unit array
+    game_actors = gs['board']['gameActors']
+    for y, row in enumerate(gs['board']['units']):
+        for x, unit_id in enumerate(row):
+            if unit_id is not None and str(unit_id) in game_actors:
+                unit = game_actors[str(unit_id)]
+                if 'ATK' in unit:  # Check if it's actually a unit
+                    unit_array[y, x] = [
+                        unit.get('ATK', 0),
+                        unit.get('DEF', 0),
+                        unit.get('MOV', 0),
+                        unit.get('RANGE', 1),
+                        unit.get('maxHP', 0),
+                        unit.get('currentHP', 0),
+                        unit.get('kills', 0),
+                        1 if unit.get('isVeteran', False) else 0,
+                        unit.get('cityPositionX', -1),
+                        unit.get('cityPositionY', -1),
+                        unit.get('status', 0),
+                        unit.get('tribeId', -1)
+                    ]
+
+    # Fill city array and tile ownership
+    for y, row in enumerate(gs['board']['tileCityId']):
+        for x, city_id in enumerate(row):
+            if city_id == 0:  # Fog of war
+                tile_ownership[y, x] = [-2, -2]
+            elif city_id > 0 and str(city_id) in game_actors:
+                city = game_actors[str(city_id)]
+                if 'level' in city:  # Check if it's actually a city
+                    city_array[y, x] = [
+                        city.get('level', 1),
+                        city.get('population', 0),
+                        city.get('populationNeed', 1),
+                        1 if city.get('isCapital', False) else 0,
+                        city.get('production', 0),
+                        1 if city.get('hasWalls', False) else 0,
+                        city.get('bound', 1),
+                        city.get('tribeId', -1)
+                    ]
+                    # Store city position for tile ownership
+                    city_pos = city.get('position', {})
+                    tile_ownership[y, x] = [
+                        city_pos.get('x', -1),
+                        city_pos.get('y', -1)
+                    ]
+
+    # Fill trade network
+    if 'tradeNetwork' in gs['board']:
+        trade_network = np.array(gs['board']['tradeNetwork']['networkTiles']).reshape(board_size, board_size, 1)
+
+    # Combine all arrays into final tensor
+    spatial_tensor = np.concatenate([
+        terrain_array,
+        resource_array,
+        building_array,
+        unit_array,
+        city_array,
+        tile_ownership,
+        trade_network
+    ], axis=2)
+
+    # Get global information
+    global_info = np.array([
+        gs['board']['activeTribeID'],
+        gs['board']['diplomacy']['allegianceStatus'][0][1]  # Assuming 2-player game
+    ])
+
+    return spatial_tensor, global_info
