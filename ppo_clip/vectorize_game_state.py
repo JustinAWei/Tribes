@@ -333,7 +333,7 @@ if __name__ == "__main__":
     spatial_tensor, global_info = game_state_to_vector(game_state)
 
     # Print some basic information about the outputs
-    print(f"Spatial tensor shape: {spatial_tensor.shape}")  # Should be (11, 11, 26)
+    print(f"Spatial tensor shape: {spatial_tensor.shape}")  # Should be (11, 11, 27)
     print(f"Global info shape: {global_info.shape}")       # Should be (2,)
 
     # Let's check some specific values to verify correctness
