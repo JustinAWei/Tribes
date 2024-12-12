@@ -9,12 +9,13 @@ from pprint import pprint
 # Create FastAPI app
 app = FastAPI()
 
-def create_coordinate_mask(coordinates, shape):
+def create_multidimensional_mask(coordinates, shape):
     """
-    Create a mask with zeros and set specified coordinates to 1.
+    Create a multi-dimensional mask with zeros and set specified coordinates to 1.
 
     Parameters:
-    - coordinates: List of coordinate tuples or lists
+    - coordinates: List of coordinate lists/tuples, where each inner list/tuple
+                   represents a coordinate across all dimensions
     - shape: Tuple specifying the dimensions of the mask
 
     Returns:
@@ -26,8 +27,8 @@ def create_coordinate_mask(coordinates, shape):
     # Set the specified coordinates to 1
     for coord in coordinates:
         # Ensure the coordinate is within the matrix bounds
-        if all(0 <= c < s for c, s in zip(coord, shape)):
-            mask[coord] = 1
+        if len(coord) == len(shape) and all(0 <= c < s for c, s in zip(coord, shape)):
+            mask[tuple(coord)] = 1
 
     return mask
 
@@ -69,7 +70,7 @@ async def receive_data(request: Request):
     try:
         # Parse game state
         gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']
-        print(gs)
+        # pprint(gs)
 
         BOARD_LEN = len(gs['board']['terrains'])
         BOARD_SIZE = BOARD_LEN ** 2
@@ -134,14 +135,19 @@ async def receive_data(request: Request):
 
         coordinates = np.array(valid_actions)
 
+        print(coordinates)
+
         # Assumption: you will never create more units than 4x board_size
         MAX_ID = BOARD_SIZE * 4
         matrix_shape = (len(ACTION_CATEGORIES), MAX_ID, max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN)
 
-        print("coordinates", coordinates)
-        print("matrix_shape", matrix_shape)
-
-        mask = create_coordinate_mask(coordinates, matrix_shape)
+        try:
+            mask = create_multidimensional_mask(coordinates, matrix_shape)
+            print("Mask created successfully.")
+            print("Mask shape:", mask.shape)
+            print("Number of 1s in the mask:", np.sum(mask))
+        except Exception as e:
+            print("Error creating mask:", e)
 
         return {
             "status": "Data processed",
