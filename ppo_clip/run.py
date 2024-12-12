@@ -8,14 +8,21 @@ import json
 # Create FastAPI app
 app = FastAPI()
 
-# Enum-like dictionary for action types
+# Reversed dictionary for action types
 ACTION_TYPES = {
-    6: "RESOURCE_GATHERING",
-    7: "SPAWN",
-    9: "END_TURN",
-    13: "ATTACK",
-    14: "CAPTURE",
-    20: "MOVE"
+    "RESOURCE_GATHERING": 6,
+    "SPAWN": 7,
+    "END_TURN": 9,
+    "ATTACK": 13,
+    "CAPTURE": 14,
+    "MOVE": 20
+}
+
+# Reversed dictionary for action categories
+ACTION_CATEGORIES = {
+    "TRIBE": 1,
+    "CITY": 2,
+    "UNIT": 3
 }
 
 class FilteredActions(BaseModel):
@@ -43,6 +50,18 @@ async def receive_data(request: Request):
         # List to store filtered city actions
         filtered_city_actions = []
 
+        valid_actions = []
+
+        # this is just a list
+        tribe_actions = gs.get('tribeActions', [])
+        filtered_tribe_actions = [
+            action for action in tribe_actions
+            if action.get('actionType') in allowed_action_types
+        ]
+        print(filtered_tribe_actions)
+        for action in filtered_tribe_actions:
+            valid_actions.append([ACTION_CATEGORIES["TRIBE"], action.get('tribeId'), ACTION_TYPES[action.get('actionType')], 0, 0])
+
         # Process city actions
         city_actions = gs.get('cityActions', {})
         for city_id, actions in city_actions.items():
@@ -62,13 +81,7 @@ async def receive_data(request: Request):
             ]
             print(unit_id, filtered_unit_actions)
 
-        # this is just a list
-        tribe_actions = gs.get('tribeActions', [])
-        filtered_tribe_actions = [
-            action for action in tribe_actions
-            if action.get('actionType') in allowed_action_types
-        ]
-        print(filtered_tribe_actions)
+
 
         return {
             "status": "Data processed",
