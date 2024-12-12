@@ -47,24 +47,28 @@ async def receive_data(request: Request):
         city_actions = gs.get('cityActions', {})
         for city_id, actions in city_actions.items():
             # Filter actions for this city
-            city_filtered_actions = [
+            filtered_city_actions = [
                 action for action in actions
                 if action.get('actionType') in allowed_action_types
             ]
+            print(city_id, filtered_city_actions)
 
-            # If there are filtered actions, add to the list
-            if city_filtered_actions:
-                filtered_city_actions.append({
-                    "city_id": city_id,
-                    "filtered_actions": city_filtered_actions
-                })
+        unit_actions = gs.get('unitActions', {})
+        for unit_id, actions in unit_actions.items():
+            # Filter actions for this city
+            filtered_unit_actions = [
+                action for action in actions
+                if action.get('actionType') in allowed_action_types
+            ]
+            print(unit_id, filtered_unit_actions)
 
-        # Log the filtered actions
-        print("Filtered City Actions:")
-        for city_action_set in filtered_city_actions:
-            print(f"City ID: {city_action_set['city_id']}")
-            for action in city_action_set['filtered_actions']:
-                print(f"  Action: {action}")
+        # this is just a list
+        tribe_actions = gs.get('tribeActions', [])
+        filtered_tribe_actions = [
+            action for action in tribe_actions
+            if action.get('actionType') in allowed_action_types
+        ]
+        print(filtered_tribe_actions)
 
         return {
             "status": "Data processed",
