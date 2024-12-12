@@ -15,6 +15,11 @@ def get_actor_x_y(actor_id, gs):
 
     return x, y
 
+BONUS_TYPES = {
+    "WORKSHOP": 0,
+    "EXPLORER": 1,
+}
+
 # Reversed dictionary for action types
 ACTION_TYPES = {
     "BUILD": 0,

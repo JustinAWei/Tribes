@@ -99,6 +99,9 @@ async def receive_data(request: Request):
                 elif action.get('actionType') == 'SPAWN':
                     unit_type = UNIT_TYPES[action.get('unit_type')]
                     valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, unit_type])
+                elif action.get('actionType') == 'LEVEL_UP':
+                    bonus_type = BONUS_TYPES[action.get('bonus')]
+                    valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, MASK, MASK, bonus_type])
                 else:
                     valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
 

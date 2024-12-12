@@ -3,10 +3,7 @@ package players.mc;
 import com.google.gson.*;
 import core.Types;
 import core.actions.Action;
-import core.actions.cityactions.Build;
-import core.actions.cityactions.CityAction;
-import core.actions.cityactions.ResourceGathering;
-import core.actions.cityactions.Spawn;
+import core.actions.cityactions.*;
 import core.actions.tribeactions.BuildRoad;
 import core.actions.tribeactions.EndTurn;
 import core.actions.tribeactions.ResearchTech;
@@ -24,6 +21,7 @@ import players.Agent;
 import players.heuristics.StateHeuristic;
 import utils.ElapsedCpuTimer;
 import utils.PostRequestSender;
+import utils.Vector2d;
 import utils.stats.StatSummary;
 
 import java.util.ArrayList;
@@ -110,7 +108,10 @@ public class MonteCarloAgent extends Agent {
                         if (actionType == Types.ACTION.BUILD) {
                             Types.BUILDING buildingType = ((Build) a).getBuildingType();
                             Types.BUILDING buildingTypeInfo = Types.BUILDING.getTypeByKey(typeInfo);
-                            if (buildingType == buildingTypeInfo) {
+                            Vector2d targetPos = ((Build) a).getTargetPos();
+                            boolean targetPosMatches = targetPos.x == x2
+                                    && targetPos.y == y2;
+                            if (buildingType == buildingTypeInfo && targetPosMatches) {
                                 filteredActions.add(a);
                             }
                         }
@@ -132,7 +133,12 @@ public class MonteCarloAgent extends Agent {
                             }
                         }
                         else if (actionType == Types.ACTION.LEVEL_UP) {
-                            filteredActions.add(a);
+                            // make sure it matches the bonus type
+                            LevelUp levelUp = (LevelUp) a;
+                            int bonusType = levelUp.getBonus().ordinal();
+                            if (bonusType == typeInfo) {
+                                filteredActions.add(a);
+                            }
                         }
                     }
                 } else if (category == 2 && a instanceof UnitAction) {
