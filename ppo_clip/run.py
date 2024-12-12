@@ -6,88 +6,12 @@ from typing import Any, Dict, List
 import json
 from pprint import pprint
 from datetime import datetime
-import torch
 
-from utils import ACTION_CATEGORIES, ACTION_TYPES, TECH_TYPES, BUILDING_TYPES, UNIT_TYPES, MASK, BOARD_LEN
+from utils import ACTION_CATEGORIES, ACTION_TYPES, TECH_TYPES, BUILDING_TYPES, UNIT_TYPES, MASK, get_actor_x_y
+from model import ppo_clip
 
 # Create FastAPI app
 app = FastAPI()
-
-def create_multidimensional_mask(coordinates, shape):
-    """
-    Create a multi-dimensional mask with zeros and set specified coordinates to 1.
-
-    Parameters:
-    - coordinates: List of coordinate lists/tuples, where each inner list/tuple
-                   represents a coordinate across all dimensions
-    - shape: Tuple specifying the dimensions of the mask
-
-    Returns:
-    - NumPy array mask with 1s at specified coordinates
-    """
-    # Create a zero matrix with the specified shape
-    mask = torch.zeros(shape, dtype=torch.int)
-
-    # Set the specified coordinates to 1
-    for coord in coordinates:
-        # Ensure the coordinate is within the matrix bounds
-        if len(coord) == len(shape) and all(0 <= c < s for c, s in zip(coord, shape)):
-            mask[tuple(coord)] = 1
-
-    return mask
-
-def get_actor_x_y(actor_id, gs):
-    # in board -> gameActors
-    game_actors = gs.get('board', {}).get('gameActors', {})
-    actor = game_actors.get(str(actor_id), {})
-    if not actor:
-        return MASK, MASK
-
-    position = actor.get('position', {})
-    x = position.get('x', 0)
-    y = position.get('y', 0)
-
-    # print("actor_id", actor_id)
-    # print(f"x: {x} | y: {y}")
-
-    return x, y
-
-def ppo_clip(game_state, valid_actions):
-    NUM_CATEGORIES = 32
-    action_space_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, NUM_CATEGORIES)
-
-    # output matrix in the action space
-    # rand matrix between 0MASK of action_space_shape
-    # TODO: actually implement the PPO-clip
-    action_space = torch.rand(action_space_shape)
-
-    # mask
-    coordinates = torch.tensor(valid_actions)
-    print(coordinates)
-    mask = create_multidimensional_mask(coordinates, action_space_shape)
-    print("Mask shape:", mask.shape)
-    print("Number of 1s in the mask:", torch.sum(mask))
-
-    # use the mask to filter the valid actions by
-    valid_action_space = action_space * mask
-    # count nonzero elements
-    print("Number of nonzero elements:", torch.count_nonzero(valid_action_space))
-
-    # softmax and choose the action
-    valid_action_space = torch.softmax(valid_action_space, dim=len(action_space_shape) - 1)
-
-    # Flatten tensor and get argmax
-    flat_index = torch.argmax(valid_action_space.flatten())
-    
-    # Convert flat index back to multi-dimensional indices
-    action = np.unravel_index(flat_index.item(), action_space_shape)
-    # this is a np arr of np.int64, i want to convert it to a list of ints
-    action = [int(i) for i in action]
-
-    print("Action:")
-    print(action)
-
-    return action
 
 @app.post("/receive")
 async def receive_data(request: Request):
@@ -115,9 +39,10 @@ async def receive_data(request: Request):
 
         BOARD_LEN = len(gs['board']['terrains'])
         BOARD_SIZE = BOARD_LEN ** 2
-
-        print("board len", BOARD_LEN)
-        print("board size", BOARD_SIZE)
+        
+        # Building types, unit types, tech types, etc.
+        MAX_EXTRA_VARS = 32
+        action_space_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, MAX_EXTRA_VARS)
 
         # Allowed action types (both numbers and strings)
         allowed_action_types = list(ACTION_TYPES.keys()) + list(ACTION_TYPES.values())
@@ -202,10 +127,9 @@ async def receive_data(request: Request):
                     # Assumption: Captures are always to the same position as the unit
                     x2, y2 = x1, y1
 
-
                 valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
 
-        action = ppo_clip(gs, valid_actions)
+        action = ppo_clip(gs, valid_actions, action_space_shape)
 
         return {
             "status": 200, 

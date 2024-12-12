@@ -1,3 +1,20 @@
+
+def get_actor_x_y(actor_id, gs):
+    # in board -> gameActors
+    game_actors = gs.get('board', {}).get('gameActors', {})
+    actor = game_actors.get(str(actor_id), {})
+    if not actor:
+        return MASK, MASK
+
+    position = actor.get('position', {})
+    x = position.get('x', 0)
+    y = position.get('y', 0)
+
+    # print("actor_id", actor_id)
+    # print(f"x: {x} | y: {y}")
+
+    return x, y
+
 # Reversed dictionary for action types
 ACTION_TYPES = {
     "BUILD": 0,
@@ -88,6 +105,4 @@ TECH_TYPES = {
 }
 
 
-BOARD_LEN = 8
-BOARD_SIZE = BOARD_LEN ** 2
 MASK = 0
