@@ -5,7 +5,10 @@ import core.Types;
 import core.actions.Action;
 import core.actions.cityactions.CityAction;
 import core.actions.tribeactions.EndTurn;
+import core.actions.unitactions.Attack;
+import core.actions.unitactions.Move;
 import core.actions.unitactions.UnitAction;
+import core.actors.Actor;
 import core.actors.Tribe;
 import core.actors.units.Unit;
 import core.game.Board;
@@ -103,7 +106,26 @@ public class MonteCarloAgent extends Agent {
                     Unit unit = board.getUnitAt(x1, y1);
                     int unitId = unit.getActorId();
                     if (unitId == ((UnitAction) a).getUnitId()) {
-                        filteredActions.add(a);
+                        if (actionType == Types.ACTION.ATTACK) {
+                            // targetId needs to match x2,y2
+                            Attack attack = (Attack) a;
+                            int targetId = attack.getTargetId();
+                            Actor actor = board.getActor(targetId);
+                            boolean targetMatches = actor.getPosition().x == x2 && actor.getPosition().y == y2;
+                            if (targetMatches) {
+                                filteredActions.add(a);
+                            }
+                        }
+                        else if (actionType == Types.ACTION.MOVE) {
+                            // destination needs to match x2,y2
+                            Move move = (Move) a;
+                            boolean destinationMatches = move.getDestination().x == x2
+                                    && move.getDestination().y == y2;
+
+                            if (destinationMatches) {
+                                filteredActions.add(a);
+                            }
+                        }
                     }
                 } else if (category == 0) {
                     filteredActions.add(a);
@@ -112,8 +134,6 @@ public class MonteCarloAgent extends Agent {
         }
 
         System.out.println(filteredActions);
-
-        // TODO: now we match the params x,y
 
         return filteredActions.get(0);
     }

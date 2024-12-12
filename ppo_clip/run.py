@@ -149,8 +149,9 @@ async def receive_data(request: Request):
             print('unit_id', 'filtered_unit_actions')
             print(unit_id, filtered_unit_actions)
             for action in filtered_unit_actions:
-                # TODO: get x,y from targetId and cityId
-                x2, y2 = 0, 0
+                x1, y1 = get_actor_x_y(int(unit_id), gs)
+
+                x2, y2 = -1, -1
                 if 'destination' in action:
                     x2 = action['destination']['x']
                     y2 = action['destination']['y']
@@ -161,7 +162,10 @@ async def receive_data(request: Request):
                 elif 'cityId' in action:
                     x2, y2 = get_actor_x_y(int(action['cityId']), gs)
 
-                x1, y1 = get_actor_x_y(int(unit_id), gs)
+                elif action.get('actionType') == 'CAPTURE':
+                    # Assumption: Captures are always to the same position as the unit
+                    x2, y2 = x1, y1
+
 
                 valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2])
 
