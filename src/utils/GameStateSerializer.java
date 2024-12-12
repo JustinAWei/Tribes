@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import core.Types;
+import core.actors.units.Unit;
 import core.game.Board;
 import core.game.GameState;
 import core.actions.Action;
@@ -37,7 +38,7 @@ public class GameStateSerializer implements JsonSerializer<GameState> {
         jsonObject.add("board", serializeBoard(gameState.getBoard()));
 
         // Add the serialized units
-        jsonObject.add("units", context.serialize(gameState.getBoard().getUnits()));
+        jsonObject.add("units", serializeUnits(gameState.getBoard()));
 
         // Serialize ranking
         jsonObject.add("ranking", context.serialize(gameState.getCurrentRanking()));
@@ -74,5 +75,44 @@ public class GameStateSerializer implements JsonSerializer<GameState> {
         boardJSON.add("resources", convert2DArray(board.getResources(), r -> r != null ? r.getKey() : -1));
 
         return boardJSON;
+    }
+
+    private JsonElement serializeUnits(Board board) {
+        JsonArray unitsArray = new JsonArray();
+        int[][] unitIds = board.getUnits();
+
+        // Iterate through all positions on the board
+        for (int x = 0; x < board.getSize(); x++) {
+            for (int y = 0; y < board.getSize(); y++) {
+                int unitId = unitIds[x][y];
+                // Only process positions where there's actually a unit (unitId != 0)
+                if (unitId != 0) {
+                    Unit unit = board.getUnitAt(x, y);
+                    if (unit != null) {  // Double check unit exists
+                        JsonObject unitJson = new JsonObject();
+                        // Basic unit info
+                        unitJson.addProperty("id", unitId);
+                        unitJson.addProperty("x", x);
+                        unitJson.addProperty("y", y);
+                        unitJson.addProperty("tribeId", unit.getTribeId());
+                        unitJson.addProperty("cityId", unit.getCityId());
+                        unitJson.addProperty("type", unit.getType().toString());
+                        unitJson.addProperty("currentHP", unit.getCurrentHP());
+                        unitJson.addProperty("maxHP", unit.getMaxHP());
+                        unitJson.addProperty("kills", unit.getKills());
+                        unitJson.addProperty("isVeteran", unit.isVeteran());
+
+                        // For water units, include base land unit type
+                        if (unit.getType().isWaterUnit()) {
+                            Types.UNIT baseLandUnit = board.getBaseLandUnit(unit);
+                            unitJson.addProperty("baseLandUnit", baseLandUnit.toString());
+                        }
+
+                        unitsArray.add(unitJson);
+                    }
+                }
+            }
+        }
+        return unitsArray;
     }
 }
