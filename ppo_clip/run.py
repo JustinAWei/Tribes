@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Request
 import uvicorn
+<<<<<<< HEAD
 import numpy as np
 from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 import json
+from pprint import pprint
 
 # Create FastAPI app
 app = FastAPI()
@@ -143,6 +145,7 @@ async def receive_data(request: Request):
     except Exception as e:
         print(f"Error processing game state: {e}")
         return {"status": "Error", "message": str(e)}
+
 
 @app.get("/")
 async def root():

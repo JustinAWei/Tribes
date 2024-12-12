@@ -1,11 +1,16 @@
 package utils;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import core.Types;
+import core.actors.units.Unit;
+import core.game.Board;
 import core.game.GameState;
 import core.actions.Action;
+import org.json.JSONArray;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -18,28 +23,20 @@ public class GameStateSerializer implements JsonSerializer<GameState> {
     public JsonElement serialize(GameState gameState, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject jsonObject = new JsonObject();
 
-        // Serialize basic fields
+        // Serialize relevant game state information
         jsonObject.addProperty("gameMode", gameState.getGameMode().toString());
         jsonObject.addProperty("tick", gameState.getTick());
-//        jsonObject.addProperty("turnMustEnd", gameState.isTurnEnding());
         jsonObject.addProperty("gameIsOver", gameState.isGameOver());
 
-        // Serialize actions
-        jsonObject.add("cityActions", serializeActions(gameState.getCityActions(), context));
-        jsonObject.add("unitActions", serializeActions(gameState.getUnitActions(), context));
+        jsonObject.add("cityActions", context.serialize(gameState.getCityActions()));
+        jsonObject.add("unitActions", context.serialize(gameState.getUnitActions()));
         jsonObject.add("tribeActions", context.serialize(gameState.getTribeActions()));
 
-        // Serialize ranking
+        jsonObject.add("board", context.serialize(gameState.getBoard()));
+        jsonObject.add("tribes", context.serialize(gameState.getTribes()));
+        jsonObject.add("activeTribeID", context.serialize(gameState.getActiveTribeID()));
         jsonObject.add("ranking", context.serialize(gameState.getCurrentRanking()));
 
         return jsonObject;
-    }
-
-    private JsonElement serializeActions(HashMap<Integer, ArrayList<Action>> actionsMap, JsonSerializationContext context) {
-        JsonObject actionsJson = new JsonObject();
-        for (Map.Entry<Integer, ArrayList<Action>> entry : actionsMap.entrySet()) {
-            actionsJson.add(entry.getKey().toString(), context.serialize(entry.getValue()));
-        }
-        return actionsJson;
     }
 }

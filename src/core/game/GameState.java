@@ -13,10 +13,9 @@ import core.actions.unitactions.factory.UnitActionBuilder;
 import core.actors.*;
 import core.actors.units.Unit;
 import core.levelgen.LevelGenerator;
-import utils.file.IO;
-import utils.Vector2d;
-
 import java.util.*;
+import utils.Vector2d;
+import utils.file.IO;
 
 public class GameState {
 
