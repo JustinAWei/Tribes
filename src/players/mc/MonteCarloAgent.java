@@ -1,5 +1,6 @@
 package players.mc;
 
+import com.google.gson.*;
 import core.Types;
 import core.actions.Action;
 import core.actions.tribeactions.EndTurn;
@@ -13,10 +14,7 @@ import utils.stats.StatSummary;
 
 import java.util.ArrayList;
 import java.util.Random;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
+
 import utils.GameStateSerializer;
 
 public class MonteCarloAgent extends Agent {
@@ -123,6 +121,10 @@ public class MonteCarloAgent extends Agent {
         // Serialize the GameState
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(GameState.class, new GameStateSerializer())
+                .registerTypeAdapter(Types.TRIBE.class, (JsonSerializer<Types.TRIBE>) (src, typeOfSrc, context) ->
+                        new JsonPrimitive(src.toString()))
+                .registerTypeAdapter(Types.RESULT.class, (JsonSerializer<Types.RESULT>) (src, typeOfSrc, context) ->
+                        new JsonPrimitive(src.toString()))
                 .create();
         JsonElement gameStateJson = gson.toJsonTree(gs);;
         jsonObject.add("gameState", gameStateJson); // Add serialized game state
