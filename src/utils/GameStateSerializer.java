@@ -33,8 +33,6 @@ public class GameStateSerializer implements JsonSerializer<GameState> {
         jsonObject.add("tribeActions", context.serialize(gameState.getTribeActions()));
 
         jsonObject.add("board", context.serialize(gameState.getBoard()));
-        jsonObject.add("tribes", context.serialize(gameState.getTribes()));
-        jsonObject.add("activeTribeID", context.serialize(gameState.getActiveTribeID()));
         jsonObject.add("ranking", context.serialize(gameState.getCurrentRanking()));
 
         return jsonObject;
