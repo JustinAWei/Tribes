@@ -36,6 +36,9 @@ public class GameStateSerializer implements JsonSerializer<GameState> {
         // Add the serialized board to the jsonObject
         jsonObject.add("board", serializeBoard(gameState.getBoard()));
 
+        // Add the serialized units
+        jsonObject.add("units", context.serialize(gameState.getBoard().getUnits()));
+
         // Serialize ranking
         jsonObject.add("ranking", context.serialize(gameState.getCurrentRanking()));
 
@@ -50,44 +53,25 @@ public class GameStateSerializer implements JsonSerializer<GameState> {
         return actionsJson;
     }
 
+    private <T> JsonArray convert2DArray(T[][] array, java.util.function.Function<T, Integer> converter) {
+        JsonArray outerArray = new JsonArray();
+        for (T[] row : array) {
+            JsonArray rowArray = new JsonArray();
+            for (T element : row) {
+                rowArray.add(converter.apply(element));
+            }
+            outerArray.add(rowArray);
+        }
+        return outerArray;
+    }
+
     private JsonElement serializeBoard(Board board) {
         JsonObject boardJSON = new JsonObject();
 
-        // Serialize Terrains
-        Types.TERRAIN[][] terrains = board.getTerrains();
-        JsonArray terrainsArray = new JsonArray();
-        for (Types.TERRAIN[] row : terrains) {
-            JsonArray rowArray = new JsonArray();
-            for (Types.TERRAIN terrain : row) {
-                rowArray.add(terrain.getKey());
-            }
-            terrainsArray.add(rowArray);
-        }
-        boardJSON.add("terrains", terrainsArray);
-
-        // Serialize Buildings
-        Types.BUILDING[][] buildings = board.getBuildings();
-        JsonArray buildingsArray = new JsonArray();
-        for (Types.BUILDING[] row : buildings) {
-            JsonArray rowArray = new JsonArray();
-            for (Types.BUILDING building : row) {
-                rowArray.add(building != null ? building.getKey() : -1);
-            }
-            buildingsArray.add(rowArray);
-        }
-        boardJSON.add("buildings", buildingsArray);
-
-        // Serialize Resources
-        Types.RESOURCE[][] resources = board.getResources();
-        JsonArray resourcesArray = new JsonArray();
-        for (Types.RESOURCE[] row : resources) {
-            JsonArray rowArray = new JsonArray();
-            for (Types.RESOURCE resource : row) {
-                rowArray.add(resource != null ? resource.getKey() : -1);
-            }
-            resourcesArray.add(rowArray);
-        }
-        boardJSON.add("resources", resourcesArray);
+        // Helper method to convert 2D arrays
+        boardJSON.add("terrains", convert2DArray(board.getTerrains(), Types.TERRAIN::getKey));
+        boardJSON.add("buildings", convert2DArray(board.getBuildings(), b -> b != null ? b.getKey() : -1));
+        boardJSON.add("resources", convert2DArray(board.getResources(), r -> r != null ? r.getKey() : -1));
 
         return boardJSON;
     }
