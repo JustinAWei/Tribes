@@ -70,6 +70,27 @@ def game_state_to_vector(game_state):
             - Allegiance status of each tribe to each other tribe; E.g. {'allegianceStatus': [[0, -37], [-37, 0]]}
         - isNative
             - Boolean indicating if the game state is native (not a copy); E.g. False
+    - cityActions
+        - Actions for each city; E.g. {'1': [{'cityId': 1,
+                                              'targetPos': {'x': 2, 'y': 3},
+                                              'actionType': 'DESTROY'},
+                                              ...
+                                             ]},
+    - unitActions
+        - Actions for each unit; E.g. {'9': [{'unitId': 9, 'actionType': 'DISBAND'},
+                                             {'destination': {'x': 1, 'y': 3},
+                                              'unitId': 9,
+                                              'actionType': 'MOVE'},
+                                              ...
+                                             ]
+                                      },
+    - tribeActions
+        - Actions for each tribe; E.g. [{'targetID': 1, 'tribeId': 0, 'actionType': 'DECLARE_WAR'},
+                                {'numStars': 1,
+                                 'targetID': 1,
+                                 'tribeId': 0,
+                                 'actionType': 'SEND_STARS'},
+                                {'tribeId': 0, 'actionType': 'END_TURN'}]}}
     - ranking
         - Tribe rank information (some might be hidden due to partial information)
         - E.g. [{'result': 'INCOMPLETE',
