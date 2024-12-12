@@ -8,6 +8,28 @@ import json
 # Create FastAPI app
 app = FastAPI()
 
+def create_coordinate_mask(coordinates, shape):
+    """
+    Create a mask with zeros and set specified coordinates to 1.
+
+    Parameters:
+    - coordinates: List of coordinate tuples or lists
+    - shape: Tuple specifying the dimensions of the mask
+
+    Returns:
+    - NumPy array mask with 1s at specified coordinates
+    """
+    # Create a zero matrix with the specified shape
+    mask = np.zeros(shape, dtype=int)
+
+    # Set the specified coordinates to 1
+    for coord in coordinates:
+        # Ensure the coordinate is within the matrix bounds
+        if all(0 <= c < s for c, s in zip(coord, shape)):
+            mask[coord] = 1
+
+    return mask
+
 # Reversed dictionary for action types
 ACTION_TYPES = {
     "RESOURCE_GATHERING": 6,
@@ -20,10 +42,13 @@ ACTION_TYPES = {
 
 # Reversed dictionary for action categories
 ACTION_CATEGORIES = {
-    "TRIBE": 1,
-    "CITY": 2,
-    "UNIT": 3
+    "TRIBE": 0,
+    "CITY": 1,
+    "UNIT": 2
 }
+
+BOARD_LEN = 8
+BOARD_SIZE = BOARD_LEN ** 2
 
 class FilteredActions(BaseModel):
     """
@@ -99,8 +124,17 @@ async def receive_data(request: Request):
                 valid_actions.append([ACTION_CATEGORIES["UNIT"], int(unit_id), ACTION_TYPES[action.get('actionType')], x, y])
 
 
-        print('all valid actions')
-        print(json.dumps(valid_actions, indent=4))
+        coordinates = np.array(valid_actions)
+
+        # Assumption: you will never create more units than 4x board_size
+        MAX_ID = BOARD_SIZE * 4
+        matrix_shape = (len(ACTION_CATEGORIES), MAX_ID, max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN)
+
+        print("coordinates", coordinates)
+        print("matrix_shape", matrix_shape)
+
+        mask = create_coordinate_mask(coordinates, matrix_shape)
+
         return {
             "status": "Data processed",
             "filtered_city_actions": valid_actions
