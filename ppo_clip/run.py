@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 import json
 from pprint import pprint
 from datetime import datetime
+import torch
 
 # Create FastAPI app
 app = FastAPI()
@@ -23,7 +24,7 @@ def create_multidimensional_mask(coordinates, shape):
     - NumPy array mask with 1s at specified coordinates
     """
     # Create a zero matrix with the specified shape
-    mask = np.zeros(shape, dtype=int)
+    mask = torch.zeros(shape, dtype=torch.int)
 
     # Set the specified coordinates to 1
     for coord in coordinates:
@@ -125,13 +126,14 @@ TECH_TYPES = {
 
 BOARD_LEN = 8
 BOARD_SIZE = BOARD_LEN ** 2
+MASK = 0
 
 def get_actor_x_y(actor_id, gs):
     # in board -> gameActors
     game_actors = gs.get('board', {}).get('gameActors', {})
     actor = game_actors.get(str(actor_id), {})
     if not actor:
-        return -1, -1
+        return MASK, MASK
 
     position = actor.get('position', {})
     x = position.get('x', 0)
@@ -205,9 +207,9 @@ async def receive_data(request: Request):
         for action in filtered_tribe_actions:
             if action.get('actionType') == 'RESEARCH_TECH':
                 tech_type = TECH_TYPES[action.get('tech')]
-                valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], -1, -1, -1, -1, tech_type])
+                valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], MASK, MASK, MASK, MASK, tech_type])
             else:
-                valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], -1, -1, -1, -1, -1])
+                valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], MASK, MASK, MASK, MASK, MASK])
 
         # Process city actions
         city_actions = gs.get('cityActions', {})
@@ -222,7 +224,7 @@ async def receive_data(request: Request):
             print('city_id', 'filtered_city_actions')
             print(city_id, filtered_city_actions)
             for action in filtered_city_actions:
-                x2, y2 = -1, -1
+                x2, y2 = MASK, MASK
                 if 'targetPos' in action:
                     x2 = action['targetPos']['x']
                     y2 = action['targetPos']['y']
@@ -236,7 +238,7 @@ async def receive_data(request: Request):
                     unit_type = UNIT_TYPES[action.get('unit_type')]
                     valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, unit_type])
                 else:
-                    valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, -1])
+                    valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
 
         unit_actions = gs.get('unitActions', {})
         print("unit_actions")
@@ -252,7 +254,7 @@ async def receive_data(request: Request):
             for action in filtered_unit_actions:
                 x1, y1 = get_actor_x_y(int(unit_id), gs)
 
-                x2, y2 = -1, -1
+                x2, y2 = MASK, MASK
                 if 'destination' in action:
                     x2 = action['destination']['x']
                     y2 = action['destination']['y']
@@ -268,31 +270,57 @@ async def receive_data(request: Request):
                     x2, y2 = x1, y1
 
 
-                valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, -1])
+                valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
 
 
-        coordinates = np.array(valid_actions)
-        print(coordinates)
-        NUM_CATEGORIES = 32
-        matrix_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, NUM_CATEGORIES)
+        def ppo_clip(game_state, valid_actions):
+            NUM_CATEGORIES = 32
+            action_space_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, NUM_CATEGORIES)
 
-        try:
-            mask = create_multidimensional_mask(coordinates, matrix_shape)
-            print("Mask created successfully.")
+            # output matrix in the action space
+            # rand matrix between 0MASK of action_space_shape
+            # TODO: actually implement the PPO-clip
+            action_space = torch.rand(action_space_shape)
+
+            # mask
+            coordinates = torch.tensor(valid_actions)
+            print(coordinates)
+            mask = create_multidimensional_mask(coordinates, action_space_shape)
             print("Mask shape:", mask.shape)
-            print("Number of 1s in the mask:", np.sum(mask))
-        except Exception as e:
-            print("Error creating mask:", e)
+            print("Number of 1s in the mask:", torch.sum(mask))
 
-        random_action = valid_actions[np.random.randint(len(valid_actions))]
+            # use the mask to filter the valid actions by
+            valid_action_space = action_space * mask
+            # count nonzero elements
+            print("Number of nonzero elements:", torch.count_nonzero(valid_action_space))
+
+            # softmax and choose the action
+            valid_action_space = torch.softmax(valid_action_space, dim=len(action_space_shape) - 1)
+
+            # Flatten tensor and get argmax
+            flat_index = torch.argmax(valid_action_space.flatten())
+            
+            # Convert flat index back to multi-dimensional indices
+            action = np.unravel_index(flat_index.item(), action_space_shape)
+            # this is a np arr of np.int64, i want to convert it to a list of ints
+            action = [int(i) for i in action]
+
+            print("Action:")
+            print(action)
+
+            return action
+
+
+        action = ppo_clip(gs, valid_actions)
+
         return {
-            "status": "Data processed", 
-            "action": random_action
+            "status": 200, 
+            "action": action
         }
 
     except Exception as e:
         print(f"Error processing game state: {e}")
-        return {"status": "Error", "message": str(e)}
+        return {"status": 500, "message": str(e)}
 
 
 @app.get("/")
