@@ -53,6 +53,22 @@ ACTION_CATEGORIES = {
 BOARD_LEN = 8
 BOARD_SIZE = BOARD_LEN ** 2
 
+def get_actor_x_y(actor_id, gs):
+    # in board -> gameActors
+    game_actors = gs.get('board', {}).get('gameActors', {})
+    actor = game_actors.get(str(actor_id), {})
+    if not actor:
+        return -1, -1
+
+    position = actor.get('position', {})
+    x = position.get('x', 0)
+    y = position.get('y', 0)
+
+    print("actor_id", actor_id)
+    print(f"x: {x} | y: {y}")
+
+    return x, y
+
 class FilteredActions(BaseModel):
     """
     Model to structure filtered city actions
@@ -98,7 +114,7 @@ async def receive_data(request: Request):
         print("filtered_tribe_actions")
         print(filtered_tribe_actions)
         for action in filtered_tribe_actions:
-            valid_actions.append([ACTION_CATEGORIES["TRIBE"], action.get('tribeId'), ACTION_TYPES[action.get('actionType')], 0, 0])
+            valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], -1, -1, -1, -1])
 
         # Process city actions
         city_actions = gs.get('cityActions', {})
@@ -114,10 +130,12 @@ async def receive_data(request: Request):
             print(city_id, filtered_city_actions)
             for action in filtered_city_actions:
                 if 'targetPos' in action:
-                    x = action['targetPos']['x']
-                    y = action['targetPos']['y']
+                    x2 = action['targetPos']['x']
+                    y2 = action['targetPos']['y']
 
-                valid_actions.append([ACTION_CATEGORIES["CITY"], int(city_id), ACTION_TYPES[action.get('actionType')], x, y])
+                x1, y1 = get_actor_x_y(int(city_id), gs)
+
+                valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2])
 
         unit_actions = gs.get('unitActions', {})
         print("unit_actions")
@@ -132,21 +150,26 @@ async def receive_data(request: Request):
             print(unit_id, filtered_unit_actions)
             for action in filtered_unit_actions:
                 # TODO: get x,y from targetId and cityId
-                x,y = 0,0
+                x2, y2 = 0, 0
                 if 'destination' in action:
-                    x = action['destination']['x']
-                    y = action['destination']['y']
+                    x2 = action['destination']['x']
+                    y2 = action['destination']['y']
 
-                valid_actions.append([ACTION_CATEGORIES["UNIT"], int(unit_id), ACTION_TYPES[action.get('actionType')], x, y])
+                elif 'targetId' in action:
+                    x2, y2 = get_actor_x_y(int(action['targetId']), gs)
+
+                elif 'cityId' in action:
+                    x2, y2 = get_actor_x_y(int(action['cityId']), gs)
+
+                x1, y1 = get_actor_x_y(int(unit_id), gs)
+
+                valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2])
 
 
         coordinates = np.array(valid_actions)
-
         print(coordinates)
 
-        # Assumption: you will never create more units than 4x board_size
-        MAX_ID = BOARD_SIZE * 4
-        matrix_shape = (len(ACTION_CATEGORIES), MAX_ID, max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN)
+        matrix_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN)
 
         try:
             mask = create_multidimensional_mask(coordinates, matrix_shape)

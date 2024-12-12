@@ -7,6 +7,8 @@ import core.actions.cityactions.CityAction;
 import core.actions.tribeactions.EndTurn;
 import core.actions.unitactions.UnitAction;
 import core.actors.Tribe;
+import core.actors.units.Unit;
+import core.game.Board;
 import core.game.GameState;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -70,16 +72,19 @@ public class MonteCarloAgent extends Agent {
         Integer category = (Integer) jsonArray.get(0);
         // first, switch on Tribe, City, Unit action
 
-        // then, get the id
-        Integer id = (Integer) jsonArray.get(1);
-
         // then, get the action
-        Integer actionId = (Integer) jsonArray.get(2);
+        Integer actionId = (Integer) jsonArray.get(1);
         Types.ACTION actionType = Types.ACTION.values()[actionId];
 
+        Board board = gs.getBoard();
+
         // then, get the right param based on x,y
-        Integer x = (Integer) jsonArray.get(3);
-        Integer y = (Integer) jsonArray.get(4);
+        Integer x1 = (Integer) jsonArray.get(2);
+        Integer y1 = (Integer) jsonArray.get(3);
+
+        // then, get the right param based on x,y
+        Integer x2 = (Integer) jsonArray.get(4);
+        Integer y2 = (Integer) jsonArray.get(5);
 
         ArrayList<Action> allActions = gs.getAllAvailableActions();
 
@@ -89,10 +94,17 @@ public class MonteCarloAgent extends Agent {
 
         for (Action a : allActions) {
             if (a.getActionType() == actionType) {
-                if (category == 1 && a instanceof CityAction && id == ((CityAction) a).getCityId()) {
-                    filteredActions.add(a);
-                } else if (category == 2 && a instanceof UnitAction && id == ((UnitAction) a).getUnitId()) {
-                    filteredActions.add(a);
+                if (category == 1 && a instanceof CityAction) {
+                    int cityId = board.getCityIdAt(x1,y1);
+                    if (cityId == ((CityAction) a).getCityId()) {
+                        filteredActions.add(a);
+                    }
+                } else if (category == 2 && a instanceof UnitAction) {
+                    Unit unit = board.getUnitAt(x1, y1);
+                    int unitId = unit.getActorId();
+                    if (unitId == ((UnitAction) a).getUnitId()) {
+                        filteredActions.add(a);
+                    }
                 } else if (category == 0) {
                     filteredActions.add(a);
                 }
