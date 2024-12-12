@@ -149,9 +149,10 @@ async def receive_data(request: Request):
         except Exception as e:
             print("Error creating mask:", e)
 
+        random_action = valid_actions[np.random.randint(len(valid_actions))]
         return {
-            "status": "Data processed",
-            "action": valid_actions[0]
+            "status": "Data processed", 
+            "action": random_action
         }
 
     except Exception as e:

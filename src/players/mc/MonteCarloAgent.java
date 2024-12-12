@@ -3,7 +3,9 @@ package players.mc;
 import com.google.gson.*;
 import core.Types;
 import core.actions.Action;
+import core.actions.cityactions.CityAction;
 import core.actions.tribeactions.EndTurn;
+import core.actions.unitactions.UnitAction;
 import core.actors.Tribe;
 import core.game.GameState;
 import org.json.JSONArray;
@@ -57,23 +59,51 @@ public class MonteCarloAgent extends Agent {
 
         String response = postRequestSender.sendPostRequest(url, jsonObject.toString());
         System.out.println(response);
-        JSONObject temp1 = new JSONObject(response);
-        System.out.println(temp1);
+        JSONObject jsonResponse = new JSONObject(response);
+        System.out.println(jsonResponse);
 
         // turn into array
-        JSONArray list = (JSONArray) temp1.get("action");
-        System.out.println(list);
+        JSONArray jsonArray = (JSONArray) jsonResponse.get("action");
+        System.out.println(jsonArray);
 
         // Turn the tensor into an action item
-//        Types.ACTION action = Types.ACTION.valueOf(x[0]);
+        Integer category = (Integer) jsonArray.get(0);
         // first, switch on Tribe, City, Unit action
-        // then, get the id
-        // then, get the action
-        // then, get the right param based on x,y
 
+        // then, get the id
+        Integer id = (Integer) jsonArray.get(1);
+
+        // then, get the action
+        Integer actionId = (Integer) jsonArray.get(2);
+        Types.ACTION actionType = Types.ACTION.values()[actionId];
+
+        // then, get the right param based on x,y
+        Integer x = (Integer) jsonArray.get(3);
+        Integer y = (Integer) jsonArray.get(4);
 
         ArrayList<Action> allActions = gs.getAllAvailableActions();
-        return allActions.get(0); //EndTurn, it's possible.
+
+        // filter by action type
+        // Filter actions by type and coordinates
+        ArrayList<Action> filteredActions = new ArrayList<>();
+
+        for (Action a : allActions) {
+            if (a.getActionType() == actionType) {
+                if (category == 1 && a instanceof CityAction && id == ((CityAction) a).getCityId()) {
+                    filteredActions.add(a);
+                } else if (category == 2 && a instanceof UnitAction && id == ((UnitAction) a).getUnitId()) {
+                    filteredActions.add(a);
+                } else if (category == 0) {
+                    filteredActions.add(a);
+                }
+            }
+        }
+
+        System.out.println(filteredActions);
+
+        // TODO: now we match the params x,y
+
+        return filteredActions.get(0);
     }
 
 
