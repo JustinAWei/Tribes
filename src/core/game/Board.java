@@ -1045,4 +1045,7 @@ public class Board {
         return actorIDcounter;
     }
     public Diplomacy getDiplomacy(){ return diplomacy; }
+    public Types.TERRAIN[][] getTerrains() { return terrains; }
+    public Types.BUILDING[][] getBuildings() { return buildings; }
+    public Types.RESOURCE[][] getResources() { return resources; }
 }
