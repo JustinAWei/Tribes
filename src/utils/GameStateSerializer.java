@@ -23,20 +23,18 @@ public class GameStateSerializer implements JsonSerializer<GameState> {
     public JsonElement serialize(GameState gameState, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject jsonObject = new JsonObject();
 
-        // Serialize basic fields
+        // Serialize relevant game state information
         jsonObject.addProperty("gameMode", gameState.getGameMode().toString());
         jsonObject.addProperty("tick", gameState.getTick());
-//        jsonObject.addProperty("turnMustEnd", gameState.isTurnEnding());
         jsonObject.addProperty("gameIsOver", gameState.isGameOver());
 
-        // Serialize actions
         jsonObject.add("cityActions", context.serialize(gameState.getCityActions()));
         jsonObject.add("unitActions", context.serialize(gameState.getUnitActions()));
         jsonObject.add("tribeActions", context.serialize(gameState.getTribeActions()));
+
         jsonObject.add("board", context.serialize(gameState.getBoard()));
         jsonObject.add("tribes", context.serialize(gameState.getTribes()));
-
-        // Serialize ranking
+        jsonObject.add("activeTribeID", context.serialize(gameState.getActiveTribeID()));
         jsonObject.add("ranking", context.serialize(gameState.getCurrentRanking()));
 
         return jsonObject;
