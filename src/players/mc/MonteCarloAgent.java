@@ -6,6 +6,8 @@ import core.actions.Action;
 import core.actions.tribeactions.EndTurn;
 import core.actors.Tribe;
 import core.game.GameState;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import players.Agent;
 import players.heuristics.StateHeuristic;
 import utils.ElapsedCpuTimer;
@@ -13,6 +15,7 @@ import utils.PostRequestSender;
 import utils.stats.StatSummary;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import utils.GameStateSerializer;
@@ -37,86 +40,9 @@ public class MonteCarloAgent extends Agent {
 
     @Override
     public Action act(GameState gs, ElapsedCpuTimer ect) {
-
-        //Set up the heuristic for this player
-        this.heuristic = params.getStateHeuristic(playerID, allPlayerIDs);
-
-        //Counter for turns and actions returned within the same turn.
-        if(lastTurn == gs.getTick())
-        {
-            actionTurnCounter++;
-        }else{
-            lastTurn = gs.getTick();
-            actionTurnCounter=0;
-        }
-
-        //Gather all available actions:
-        ArrayList<Action> allActions = gs.getAllAvailableActions();
-        int numActions = allActions.size();
-        if(numActions == 1)
-            return allActions.get(0); //EndTurn, it's possible.
-
-        fmCalls = 0;
-        boolean end = false;
-
-        //Take one type of action at random. With Prioritize Root == true, we focus only on one subset of actions for the root (see determineActionGroup)
-        // otherwise, all actions are in the bag.
-        ArrayList<Action> rootActions = params.PRIORITIZE_ROOT ? determineActionGroup(gs, m_rnd) : allActions;
-        if(rootActions == null)
-            return new EndTurn(gs.getActiveTribeID());
-
-
-        params.num_iterations = rootActions.size() * params.N_ROLLOUT_MULT;
-        StatSummary[] scores = new StatSummary[rootActions.size()];
-
-        Action bestAction = null;
-        double maxQ = Double.NEGATIVE_INFINITY;
-        int nRollouts = 0;
-        while (!end)
-        {
-            int rootActionIndex = m_rnd.nextInt(rootActions.size());
-            Action act = rootActions.get(rootActionIndex);
-
-            //Let's avoid unwanted EndTurn actions
-            while(act.getActionType() == Types.ACTION.END_TURN)
-            {
-                rootActionIndex = m_rnd.nextInt(rootActions.size());
-                act = rootActions.get(rootActionIndex);
-            }
-
-//            System.out.println("----- " + gs.getTick() + ":" + actionTurnCounter + ":" + nRollouts + " ------ " + gs.getActiveTribeID());
-
-            //Another rollout
-            double score = rollout(gs, act);
-            nRollouts++;
-
-            //Update scores and keep a reference to the action with the highest average.
-            if(scores[rootActionIndex] == null)
-                scores[rootActionIndex] = new StatSummary();
-
-            scores[rootActionIndex].add(score);
-            if(scores[rootActionIndex].mean() > maxQ)
-            {
-                maxQ = scores[rootActionIndex].mean();
-                bestAction = act;
-            }
-
-            //Stop conditions:
-            if(params.stop_type == params.STOP_FMCALLS && fmCalls >= params.num_fmcalls)
-                end = true;
-            if(params.stop_type == params.STOP_ITERATIONS && nRollouts >= params.num_iterations)
-                end = true;
-        }
-
-        String resultStr = "[Tribe: " + playerID + "] Tick " +  gs.getTick() + ", num actions: " + rootActions.size() +
-                ", FM calls: " + fmCalls + ". Executing " + bestAction.toString();
-
-        System.out.println(resultStr);
-
         PostRequestSender postRequestSender = new PostRequestSender();
         String url = "http://localhost:8000/receive";
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("action", resultStr);
 
         // Serialize the GameState
         Gson gson = new GsonBuilder()
@@ -129,10 +55,25 @@ public class MonteCarloAgent extends Agent {
         JsonElement gameStateJson = gson.toJsonTree(gs);;
         jsonObject.add("gameState", gameStateJson); // Add serialized game state
 
-        postRequestSender.sendPostRequest(url, jsonObject.toString());
+        String response = postRequestSender.sendPostRequest(url, jsonObject.toString());
+        System.out.println(response);
+        JSONObject temp1 = new JSONObject(response);
+        System.out.println(temp1);
 
-        //Chosen action to play
-        return bestAction;
+        // turn into array
+        JSONArray list = (JSONArray) temp1.get("action");
+        System.out.println(list);
+
+        // Turn the tensor into an action item
+//        Types.ACTION action = Types.ACTION.valueOf(x[0]);
+        // first, switch on Tribe, City, Unit action
+        // then, get the id
+        // then, get the action
+        // then, get the right param based on x,y
+
+
+        ArrayList<Action> allActions = gs.getAllAvailableActions();
+        return allActions.get(0); //EndTurn, it's possible.
     }
 
 

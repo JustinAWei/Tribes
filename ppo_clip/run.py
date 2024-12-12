@@ -151,7 +151,7 @@ async def receive_data(request: Request):
 
         return {
             "status": "Data processed",
-            "filtered_city_actions": valid_actions
+            "action": valid_actions[0]
         }
 
     except Exception as e:
