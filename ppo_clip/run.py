@@ -58,6 +58,7 @@ async def receive_data(request: Request):
             action for action in tribe_actions
             if action.get('actionType') in allowed_action_types
         ]
+        print("filtered_tribe_actions")
         print(filtered_tribe_actions)
         for action in filtered_tribe_actions:
             valid_actions.append([ACTION_CATEGORIES["TRIBE"], action.get('tribeId'), ACTION_TYPES[action.get('actionType')], 0, 0])
@@ -70,7 +71,14 @@ async def receive_data(request: Request):
                 action for action in actions
                 if action.get('actionType') in allowed_action_types
             ]
+            print('city_id', 'filtered_city_actions')
             print(city_id, filtered_city_actions)
+            for action in filtered_city_actions:
+                if 'targetPos' in action:
+                    x = action['targetPos']['x']
+                    y = action['targetPos']['y']
+
+                valid_actions.append([ACTION_CATEGORIES["CITY"], int(city_id), ACTION_TYPES[action.get('actionType')], x, y])
 
         unit_actions = gs.get('unitActions', {})
         for unit_id, actions in unit_actions.items():
@@ -79,13 +87,23 @@ async def receive_data(request: Request):
                 action for action in actions
                 if action.get('actionType') in allowed_action_types
             ]
+            print('unit_id', 'filtered_unit_actions')
             print(unit_id, filtered_unit_actions)
+            for action in filtered_unit_actions:
+                # TODO: get x,y from targetId and cityId
+                x,y = 0,0
+                if 'destination' in action:
+                    x = action['destination']['x']
+                    y = action['destination']['y']
+
+                valid_actions.append([ACTION_CATEGORIES["UNIT"], int(unit_id), ACTION_TYPES[action.get('actionType')], x, y])
 
 
-
+        print('all valid actions')
+        print(json.dumps(valid_actions, indent=4))
         return {
             "status": "Data processed",
-            "filtered_city_actions": filtered_city_actions
+            "filtered_city_actions": valid_actions
         }
 
     except Exception as e:
