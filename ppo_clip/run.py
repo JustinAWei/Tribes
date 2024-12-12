@@ -26,8 +26,8 @@ async def receive_data(request: Request):
         gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']
         # pprint(gs)
 
-        # Save game state only every 20th request
-        # if request_counter % 20 == 0:
+        # Save game state
+        # if gs["tick"] % 40 == 0:
         #     # Create timestamped filename
         #     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         #     filename = f'game_state_{timestamp}.json'
