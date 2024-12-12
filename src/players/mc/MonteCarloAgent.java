@@ -166,13 +166,11 @@ public class MonteCarloAgent extends Agent {
                     // Research
                     // check action type
                     if (actionType == Types.ACTION.RESEARCH_TECH) {
-//                        Types.TECHNOLOGY techType = ((ResearchTech) a).getTech();
-//                        Types.TECHNOLOGY techTypeInfo = Types.TECHNOLOGY
-//                        if (techType == techTypeInfo) {
-//                            filteredActions.add(a);
-//                        }
-                        // TODO: match tech type, right now we just pick the first one
-                        filteredActions.add(a);
+                       Types.TECHNOLOGY techType = ((ResearchTech) a).getTech();
+                       int techTypeInt = techType.ordinal();
+                       if (techTypeInt == typeInfo) {
+                           filteredActions.add(a);
+                       }
                     }
                     else if (actionType == Types.ACTION.END_TURN) {
                         filteredActions.add(a);
