@@ -33,8 +33,8 @@ public class Constants {
     public static int GUI_ZOOM_FACTOR = 5;
 
     //Maximum number of turns to be played and playing settings
-    static final int MAX_TURNS = 30;
-    public static int MAX_TURNS_CAPITALS = 50; //Integer.MAX_VALUE; //Setting a max is useful for experiments
+    static final int MAX_TURNS = 50;
+    public static int MAX_TURNS_CAPITALS = 1000; //Integer.MAX_VALUE; //Setting a max is useful for experiments
     public static final boolean PLAY_WITH_FULL_OBS = false; //This is for agents
-    public static final boolean GUI_FORCE_FULL_OBS = false; //This is for display
+    public static final boolean GUI_FORCE_FULL_OBS = true; //This is for display
 }

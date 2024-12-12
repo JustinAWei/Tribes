@@ -3,8 +3,12 @@ package players.mc;
 import com.google.gson.*;
 import core.Types;
 import core.actions.Action;
+import core.actions.cityactions.Build;
 import core.actions.cityactions.CityAction;
+import core.actions.cityactions.ResourceGathering;
+import core.actions.cityactions.Spawn;
 import core.actions.tribeactions.EndTurn;
+import core.actions.tribeactions.ResearchTech;
 import core.actions.unitactions.Attack;
 import core.actions.unitactions.Move;
 import core.actions.unitactions.UnitAction;
@@ -87,6 +91,8 @@ public class MonteCarloAgent extends Agent {
         Integer x2 = (Integer) jsonArray.get(4);
         Integer y2 = (Integer) jsonArray.get(5);
 
+        int typeInfo = (Integer) jsonArray.get(6);
+
         Board board = gs.getBoard();
         ArrayList<Action> allActions = gs.getAllAvailableActions();
 
@@ -99,7 +105,34 @@ public class MonteCarloAgent extends Agent {
                 if (category == 1 && a instanceof CityAction) {
                     int cityId = board.getCityIdAt(x1,y1);
                     if (cityId == ((CityAction) a).getCityId()) {
-                        filteredActions.add(a);
+                        // Build
+                        if (actionType == Types.ACTION.BUILD) {
+                            Types.BUILDING buildingType = ((Build) a).getBuildingType();
+                            Types.BUILDING buildingTypeInfo = Types.BUILDING.getTypeByKey(typeInfo);
+                            if (buildingType == buildingTypeInfo) {
+                                filteredActions.add(a);
+                            }
+                        }
+                        // Spawn
+                        else if (actionType == Types.ACTION.SPAWN) {
+                            Types.UNIT unitType = ((Spawn) a).getUnitType();
+                            Types.UNIT unitTypeInfo = Types.UNIT.getTypeByKey(typeInfo);
+                            if (unitType == unitTypeInfo) {
+                                filteredActions.add(a);
+                            }
+                        }
+                        else if (actionType == Types.ACTION.RESOURCE_GATHERING) {
+                            // check targetPos matches x2,y2
+                            ResourceGathering resourceGathering = (ResourceGathering) a;
+                            boolean targetPosMatches = resourceGathering.getTargetPos().x == x2
+                                    && resourceGathering.getTargetPos().y == y2;
+                            if (targetPosMatches) {
+                                filteredActions.add(a);
+                            }
+                        }
+                        else if (actionType == Types.ACTION.LEVEL_UP) {
+                            filteredActions.add(a);
+                        }
                     }
                 } else if (category == 2 && a instanceof UnitAction) {
                     Unit unit = board.getUnitAt(x1, y1);
@@ -130,7 +163,20 @@ public class MonteCarloAgent extends Agent {
                         }
                     }
                 } else if (category == 0) {
-                    filteredActions.add(a);
+                    // Research
+                    // check action type
+                    if (actionType == Types.ACTION.RESEARCH_TECH) {
+//                        Types.TECHNOLOGY techType = ((ResearchTech) a).getTech();
+//                        Types.TECHNOLOGY techTypeInfo = Types.TECHNOLOGY
+//                        if (techType == techTypeInfo) {
+//                            filteredActions.add(a);
+//                        }
+                        // TODO: match tech type, right now we just pick the first one
+                        filteredActions.add(a);
+                    }
+                    else if (actionType == Types.ACTION.END_TURN) {
+                        filteredActions.add(a);
+                    }
                 }
             }
         }

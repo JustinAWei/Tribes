@@ -34,11 +34,13 @@ def create_multidimensional_mask(coordinates, shape):
 
 # Reversed dictionary for action types
 ACTION_TYPES = {
+    "BUILD": 0,
     "LEVEL_UP": 5,
     "RESOURCE_GATHERING": 6,
     "SPAWN": 7,
 
     "END_TURN": 9,
+    "RESEARCH_TECH": 10,
 
     "ATTACK": 13,
     "CAPTURE": 14,
@@ -51,6 +53,74 @@ ACTION_CATEGORIES = {
     "CITY": 1,
     "UNIT": 2
 }
+
+
+# Unit type mapping
+UNIT_TYPES = {
+    "WARRIOR": 0,
+    "RIDER": 1, 
+    "DEFENDER": 2,
+    "SWORDMAN": 3,
+    "ARCHER": 4,
+    "CATAPULT": 5,
+    "KNIGHT": 6,
+    "MIND_BENDER": 7,
+    "BOAT": 8,
+    "SHIP": 9,
+    "BATTLESHIP": 10,
+    "SUPERUNIT": 11
+}
+
+# Building type mapping
+BUILDING_TYPES = {
+    "PORT": 0,
+    "MINE": 1,
+    "FORGE": 2,
+    "FARM": 3,
+    "WINDMILL": 4,
+    "CUSTOMS_HOUSE": 5,
+    "LUMBER_HUT": 6,
+    "SAWMILL": 7,
+    "TEMPLE": 8,
+    "WATER_TEMPLE": 9,
+    "FOREST_TEMPLE": 10,
+    "MOUNTAIN_TEMPLE": 11,
+    "ALTAR_OF_PEACE": 12,
+    "EMPERORS_TOMB": 13,
+    "EYE_OF_GOD": 14,
+    "GATE_OF_POWER": 15,
+    "GRAND_BAZAR": 16,
+    "PARK_OF_FORTUNE": 17,
+    "TOWER_OF_WISDOM": 18
+}
+# Technology type mapping
+TECH_TYPES = {
+    "CLIMBING": 0,
+    "FISHING": 1,
+    "HUNTING": 2,
+    "ORGANIZATION": 3,
+    "RIDING": 4,
+    "ARCHERY": 5,
+    "FARMING": 6,
+    "FORESTRY": 7,
+    "FREE_SPIRIT": 8,
+    "MEDITATION": 9,
+    "MINING": 10,
+    "ROADS": 11,
+    "SAILING": 12,
+    "SHIELDS": 13,
+    "WHALING": 14,
+    "AQUATISM": 15,
+    "CHIVALRY": 16,
+    "CONSTRUCTION": 17,
+    "MATHEMATICS": 18,
+    "NAVIGATION": 19,
+    "SMITHERY": 20,
+    "SPIRITUALISM": 21,
+    "TRADE": 22,
+    "PHILOSOPHY": 23
+}
+
 
 BOARD_LEN = 8
 BOARD_SIZE = BOARD_LEN ** 2
@@ -116,7 +186,11 @@ async def receive_data(request: Request):
         print("filtered_tribe_actions")
         print(filtered_tribe_actions)
         for action in filtered_tribe_actions:
-            valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], -1, -1, -1, -1])
+            if action.get('actionType') == 'RESEARCH_TECH':
+                tech_type = TECH_TYPES[action.get('tech')]
+                valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], -1, -1, -1, -1, tech_type])
+            else:
+                valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], -1, -1, -1, -1, -1])
 
         # Process city actions
         city_actions = gs.get('cityActions', {})
@@ -131,13 +205,21 @@ async def receive_data(request: Request):
             print('city_id', 'filtered_city_actions')
             print(city_id, filtered_city_actions)
             for action in filtered_city_actions:
+                x2, y2 = -1, -1
                 if 'targetPos' in action:
                     x2 = action['targetPos']['x']
                     y2 = action['targetPos']['y']
 
                 x1, y1 = get_actor_x_y(int(city_id), gs)
 
-                valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2])
+                if action.get('actionType') == 'BUILD':
+                    building_type = BUILDING_TYPES[action.get('buildingType')]
+                    valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, building_type])
+                elif action.get('actionType') == 'SPAWN':
+                    unit_type = UNIT_TYPES[action.get('unit_type')]
+                    valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, unit_type])
+                else:
+                    valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, -1])
 
         unit_actions = gs.get('unitActions', {})
         print("unit_actions")
@@ -169,13 +251,13 @@ async def receive_data(request: Request):
                     x2, y2 = x1, y1
 
 
-                valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2])
+                valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, -1])
 
 
         coordinates = np.array(valid_actions)
         print(coordinates)
-
-        matrix_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN)
+        NUM_CATEGORIES = 32
+        matrix_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, NUM_CATEGORIES)
 
         try:
             mask = create_multidimensional_mask(coordinates, matrix_shape)
