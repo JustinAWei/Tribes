@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Request
 import uvicorn
-<<<<<<< HEAD
 import numpy as np
 from pydantic import BaseModel, Field
 from typing import Any, Dict, List
@@ -70,6 +69,13 @@ async def receive_data(request: Request):
     try:
         # Parse game state
         gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']
+        print(gs)
+
+        BOARD_LEN = len(gs['board']['terrains'])
+        BOARD_SIZE = BOARD_LEN ** 2
+
+        print("board len", BOARD_LEN)
+        print("board size", BOARD_SIZE)
 
         # Allowed action types (both numbers and strings)
         allowed_action_types = list(ACTION_TYPES.keys()) + list(ACTION_TYPES.values())
