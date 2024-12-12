@@ -34,6 +34,7 @@ def create_multidimensional_mask(coordinates, shape):
 
 # Reversed dictionary for action types
 ACTION_TYPES = {
+    "LEVEL_UP": 5,
     "RESOURCE_GATHERING": 6,
     "SPAWN": 7,
     "END_TURN": 9,
@@ -88,6 +89,8 @@ async def receive_data(request: Request):
 
         # this is just a list
         tribe_actions = gs.get('tribeActions', [])
+        print("tribe_actions")
+        print(tribe_actions)
         filtered_tribe_actions = [
             action for action in tribe_actions
             if action.get('actionType') in allowed_action_types
@@ -99,6 +102,8 @@ async def receive_data(request: Request):
 
         # Process city actions
         city_actions = gs.get('cityActions', {})
+        print("city_actions")
+        print(city_actions)
         for city_id, actions in city_actions.items():
             # Filter actions for this city
             filtered_city_actions = [
@@ -115,6 +120,8 @@ async def receive_data(request: Request):
                 valid_actions.append([ACTION_CATEGORIES["CITY"], int(city_id), ACTION_TYPES[action.get('actionType')], x, y])
 
         unit_actions = gs.get('unitActions', {})
+        print("unit_actions")
+        print(unit_actions)
         for unit_id, actions in unit_actions.items():
             # Filter actions for this city
             filtered_unit_actions = [
