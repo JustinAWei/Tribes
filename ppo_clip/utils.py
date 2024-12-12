@@ -18,6 +18,12 @@ def get_actor_x_y(actor_id, gs):
 BONUS_TYPES = {
     "WORKSHOP": 0,
     "EXPLORER": 1,
+    "CITY_WALL": 2,
+    "RESOURCES": 3,
+    "POP_GROWTH": 4,
+    "BORDER_GROWTH": 5,
+    "PARK": 6,
+    "SUPERUNIT": 7
 }
 
 # Reversed dictionary for action types
