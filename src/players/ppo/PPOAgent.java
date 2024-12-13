@@ -58,23 +58,23 @@ public class PPOAgent extends Agent {
         System.out.println(jsonArray);
 
         // Turn the tensor into an action item
-        Integer category = (Integer) jsonArray.get(0);
+//        Integer category = (Integer) jsonArray.get(0);
         // first, switch on Tribe, City, Unit action
 
         // then, get the action
-        Integer actionId = (Integer) jsonArray.get(1);
+        Integer actionId = (Integer) jsonArray.get(0);
         Types.ACTION actionType = Types.ACTION.values()[actionId];
 
 
         // then, get the right param based on x,y
-        Integer x1 = (Integer) jsonArray.get(2);
-        Integer y1 = (Integer) jsonArray.get(3);
+        Integer x1 = (Integer) jsonArray.get(1);
+        Integer y1 = (Integer) jsonArray.get(2);
 
         // then, get the right param based on x,y
-        Integer x2 = (Integer) jsonArray.get(4);
-        Integer y2 = (Integer) jsonArray.get(5);
+        Integer x2 = (Integer) jsonArray.get(3);
+        Integer y2 = (Integer) jsonArray.get(4);
 
-        int typeInfo = (Integer) jsonArray.get(6);
+        int typeInfo = (Integer) jsonArray.get(5);
 
         Board board = gs.getBoard();
         ArrayList<Action> allActions = gs.getAllAvailableActions();
@@ -84,103 +84,108 @@ public class PPOAgent extends Agent {
         ArrayList<Action> filteredActions = new ArrayList<>();
 
         for (Action a : allActions) {
-            if (a.getActionType() == actionType) {
-                if (category == 1 && a instanceof CityAction) {
-                    int cityId = board.getCityIdAt(x1,y1);
-                    if (cityId == ((CityAction) a).getCityId()) {
-                        // Build
-                        if (actionType == Types.ACTION.BUILD) {
-                            Types.BUILDING buildingType = ((Build) a).getBuildingType();
-                            Types.BUILDING buildingTypeInfo = Types.BUILDING.getTypeByKey(typeInfo);
-                            Vector2d targetPos = ((Build) a).getTargetPos();
-                            boolean targetPosMatches = targetPos.x == x2
-                                    && targetPos.y == y2;
-                            if (buildingType == buildingTypeInfo && targetPosMatches) {
-                                filteredActions.add(a);
-                            }
-                        }
-                        // Spawn
-                        else if (actionType == Types.ACTION.SPAWN) {
-                            Types.UNIT unitType = ((Spawn) a).getUnitType();
-                            Types.UNIT unitTypeInfo = Types.UNIT.getTypeByKey(typeInfo);
-                            if (unitType == unitTypeInfo) {
-                                filteredActions.add(a);
-                            }
-                        }
-                        else if (actionType == Types.ACTION.RESOURCE_GATHERING) {
-                            // check targetPos matches x2,y2
-                            ResourceGathering resourceGathering = (ResourceGathering) a;
-                            boolean targetPosMatches = resourceGathering.getTargetPos().x == x2
-                                    && resourceGathering.getTargetPos().y == y2;
-                            if (targetPosMatches) {
-                                filteredActions.add(a);
-                            }
-                        }
-                        else if (actionType == Types.ACTION.LEVEL_UP) {
-                            // make sure it matches the bonus type
-                            LevelUp levelUp = (LevelUp) a;
-                            int bonusType = levelUp.getBonus().ordinal();
-                            if (bonusType == typeInfo) {
-                                filteredActions.add(a);
-                            }
+            if (a.getActionType() != actionType) {
+                continue;
+            }
+            if (a instanceof CityAction) {
+                int cityId = board.getCityIdAt(x1,y1);
+                if (cityId == ((CityAction) a).getCityId()) {
+                    // Build
+                    if (actionType == Types.ACTION.BUILD) {
+                        Types.BUILDING buildingType = ((Build) a).getBuildingType();
+                        Types.BUILDING buildingTypeInfo = Types.BUILDING.getTypeByKey(typeInfo);
+                        Vector2d targetPos = ((Build) a).getTargetPos();
+                        boolean targetPosMatches = targetPos.x == x2
+                                && targetPos.y == y2;
+                        if (buildingType == buildingTypeInfo && targetPosMatches) {
+                            filteredActions.add(a);
                         }
                     }
-                } else if (category == 2 && a instanceof UnitAction) {
-                    Unit unit = board.getUnitAt(x1, y1);
-                    int unitId = unit.getActorId();
-                    if (unitId == ((UnitAction) a).getUnitId()) {
-                        if (actionType == Types.ACTION.ATTACK) {
-                            // targetId needs to match x2,y2
-                            Attack attack = (Attack) a;
-                            int targetId = attack.getTargetId();
-                            Actor actor = board.getActor(targetId);
-                            boolean targetMatches = actor.getPosition().x == x2 && actor.getPosition().y == y2;
-                            if (targetMatches) {
-                                filteredActions.add(a);
-                            }
+                    // Spawn
+                    else if (actionType == Types.ACTION.SPAWN) {
+                        Types.UNIT unitType = ((Spawn) a).getUnitType();
+                        Types.UNIT unitTypeInfo = Types.UNIT.getTypeByKey(typeInfo);
+                        if (unitType == unitTypeInfo) {
+                            filteredActions.add(a);
                         }
-                        else if (actionType == Types.ACTION.MOVE) {
-                            // destination needs to match x2,y2
-                            Move move = (Move) a;
-                            boolean destinationMatches = move.getDestination().x == x2
-                                    && move.getDestination().y == y2;
+                    }
+                    else if (actionType == Types.ACTION.RESOURCE_GATHERING) {
+                        // check targetPos matches x2,y2
+                        ResourceGathering resourceGathering = (ResourceGathering) a;
+                        boolean targetPosMatches = resourceGathering.getTargetPos().x == x2
+                                && resourceGathering.getTargetPos().y == y2;
+                        if (targetPosMatches) {
+                            filteredActions.add(a);
+                        }
+                    }
+                    else if (actionType == Types.ACTION.LEVEL_UP) {
+//                        System.out.println("Level up");
+                        // make sure it matches the bonus type
+                        LevelUp levelUp = (LevelUp) a;
+                        int bonusType = levelUp.getBonus().ordinal();
+//                        System.out.println("Bonus Type: " + bonusType);
+//                        System.out.println("Bonus Level: " + typeInfo);
+                        if (bonusType == typeInfo) {
+                            filteredActions.add(a);
+                        }
+                    }
+                }
+            } else if (a instanceof UnitAction) {
+                Unit unit = board.getUnitAt(x1, y1);
+                int unitId = unit.getActorId();
+                if (unitId == ((UnitAction) a).getUnitId()) {
+                    if (actionType == Types.ACTION.ATTACK) {
+                        // targetId needs to match x2,y2
+                        Attack attack = (Attack) a;
+                        int targetId = attack.getTargetId();
+                        Actor actor = board.getActor(targetId);
+                        boolean targetMatches = actor.getPosition().x == x2 && actor.getPosition().y == y2;
+                        if (targetMatches) {
+                            filteredActions.add(a);
+                        }
+                    }
+                    else if (actionType == Types.ACTION.MOVE) {
+                        // destination needs to match x2,y2
+                        Move move = (Move) a;
+                        boolean destinationMatches = move.getDestination().x == x2
+                                && move.getDestination().y == y2;
 
-                            if (destinationMatches) {
-                                filteredActions.add(a);
-                            }
-                        }
-                        else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN || actionType == Types.ACTION.DISBAND) {
+                        if (destinationMatches) {
                             filteredActions.add(a);
                         }
                     }
-                } else if (category == 0) {
-                    // Research
-                    // check action type
-                    if (actionType == Types.ACTION.RESEARCH_TECH) {
-                        Types.TECHNOLOGY techType = ((ResearchTech) a).getTech();
-                        int techTypeInt = techType.ordinal();
-                        if (techTypeInt == typeInfo) {
-                            filteredActions.add(a);
-                        }
-                    }
-                    else if (actionType == Types.ACTION.BUILD_ROAD) {
-                        // check position
-                        BuildRoad buildRoad = (BuildRoad) a;
-                        boolean positionMatches = buildRoad.getPosition().x == x1 && buildRoad.getPosition().y == y1;
-                        if (positionMatches) {
-                            filteredActions.add(a);
-                        }
-                    }
-                    else if (actionType == Types.ACTION.END_TURN) {
+                    else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN || actionType == Types.ACTION.DISBAND) {
                         filteredActions.add(a);
                     }
                 }
+            }
+            // Research
+            // check action type
+            else if (actionType == Types.ACTION.RESEARCH_TECH) {
+                Types.TECHNOLOGY techType = ((ResearchTech) a).getTech();
+                int techTypeInt = techType.ordinal();
+//                System.out.println("Tech Type: " + techTypeInt);
+//                System.out.println("Tech Tech Type: " + typeInfo);
+                if (techTypeInt == typeInfo) {
+                    filteredActions.add(a);
+                }
+            }
+            else if (actionType == Types.ACTION.BUILD_ROAD) {
+                // check position
+                BuildRoad buildRoad = (BuildRoad) a;
+                boolean positionMatches = buildRoad.getPosition().x == x1 && buildRoad.getPosition().y == y1;
+                if (positionMatches) {
+                    filteredActions.add(a);
+                }
+            }
+            else if (actionType == Types.ACTION.END_TURN) {
+                filteredActions.add(a);
             }
         }
 
         System.out.println(filteredActions);
 
-        return filteredActions.get(0);
+        return filteredActions.getFirst();
     }
 
     public Agent copy() {

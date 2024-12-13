@@ -21,13 +21,13 @@ def filter_actions(gs):
     for action in filtered_tribe_actions:
         if action.get('actionType') == 'RESEARCH_TECH':
             tech_type = TECH_TYPES[action.get('tech')]
-            valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], MASK, MASK, MASK, MASK, tech_type])
+            valid_actions.append([ACTION_TYPES[action.get('actionType')], MASK, MASK, MASK, MASK, tech_type])
         elif action.get('actionType') == 'BUILD_ROAD':
             # get position
             x, y = action.get('position').get('x'), action.get('position').get('y')
-            valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], x, y, MASK, MASK, MASK])
+            valid_actions.append([ACTION_TYPES[action.get('actionType')], x, y, MASK, MASK, MASK])
         else:
-            valid_actions.append([ACTION_CATEGORIES["TRIBE"], ACTION_TYPES[action.get('actionType')], MASK, MASK, MASK, MASK, MASK])
+            valid_actions.append([ACTION_TYPES[action.get('actionType')], MASK, MASK, MASK, MASK, MASK])
 
     # Process city actions
     # List to store filtered city actions
@@ -53,17 +53,17 @@ def filter_actions(gs):
 
             if action.get('actionType') == 'BUILD':
                 building_type = BUILDING_TYPES[action.get('buildingType')]
-                valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, building_type])
+                valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, building_type])
             elif action.get('actionType') == 'SPAWN':
                 unit_type = UNIT_TYPES[action.get('unit_type')]
                 print(action.get('unit_type'))
                 print(unit_type)
-                valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, unit_type])
+                valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, unit_type])
             elif action.get('actionType') == 'LEVEL_UP':
                 bonus_type = BONUS_TYPES[action.get('bonus')]
-                valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, MASK, MASK, bonus_type])
+                valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, MASK, MASK, bonus_type])
             else:
-                valid_actions.append([ACTION_CATEGORIES["CITY"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
+                valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
 
     unit_actions = gs.get('unitActions', {})
     print("unit_actions")
@@ -94,7 +94,7 @@ def filter_actions(gs):
                 # Assumption: These are always to the same position as the unit
                 x2, y2 = x1, y1
 
-            valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
+            valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
     return valid_actions
 
 
