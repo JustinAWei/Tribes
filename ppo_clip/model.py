@@ -194,7 +194,7 @@ class PPOClipAgent:
             
         return advantages
 
-    def _update(self, game_state, valid_actions):
+    def _update(self, game_state, valid_actions, old_log_probs):
         # Rewards-to-go
         rewards = torch.tensor([t[2] for t in self._trajectories])
         values = self._critic.forward(game_state)
