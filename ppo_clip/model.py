@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import numpy as np
 from collections import defaultdict
 # import loss
@@ -7,6 +8,81 @@ from utils import BOARD_LEN
 from utils import reward_fn
 from torch import optim
 
+# To reduce duplicate code, this is used for both the actor and the critic
+class FeatureExtractor(nn.Module):
+    def __init__(self):
+        super(FeatureExtractor, self).__init__()
+        
+        # CNN for spatial features
+        self.conv_net = nn.Sequential(
+            nn.Conv2d(in_channels=27, out_channels=128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=3, padding=1),
+            nn.ReLU()
+        )
+        
+        # MLP for global features
+        self.global_net = nn.Sequential(
+            nn.Linear(2, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU()
+        )
+        
+    def forward(self, spatial, global_features):
+        # Rearrange spatial for CNN
+        spatial = spatial.permute(0, 3, 1, 2)  # -> (batch, 27, board_size, board_size)
+        
+        # Process spatial
+        spatial_out = self.conv_net(spatial)  # -> (batch, 64, board_size, board_size)
+        spatial_out = spatial_out.flatten(1)   # -> (batch, 64*board_size*board_size)
+        
+        # Process global
+        global_out = self.global_net(global_features)  # -> (batch, 64)
+        
+        # Combine
+        combined = torch.cat([spatial_out, global_out], dim=1)  # -> (batch, 64*board_size*board_size + 64)
+        return combined
+
+class Actor(nn.Module):
+    def __init__(self, board_size, output_size):
+        super(Actor, self).__init__()
+        self.feature_extractor = FeatureExtractor()
+        
+        spatial_flat_size = 64 * board_size * board_size
+        combined_size = spatial_flat_size + 64
+        
+        self.policy_head = nn.Sequential(
+            nn.Linear(combined_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, output_size)
+        )
+
+    def forward(self, spatial, global_features):
+        combined = self.feature_extractor(spatial, global_features)
+        return self.policy_head(combined)  # -> (batch, output_size)
+
+class Critic(nn.Module):
+    def __init__(self, board_size):
+        super(Critic, self).__init__()
+        self.feature_extractor = FeatureExtractor()
+        
+        spatial_flat_size = 64 * board_size * board_size
+        combined_size = spatial_flat_size + 64
+        
+        self.value_head = nn.Sequential(
+            nn.Linear(combined_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 1)  # Output a single value
+        )
+
+    def forward(self, spatial, global_features):
+        combined = self.feature_extractor(spatial, global_features)
+        return self.value_head(combined)  # -> (batch, 1)
 class PPOClipAgent:
     def __init__(self, input_size, output_size):
         self.input_size = input_size
@@ -179,24 +255,6 @@ class PPOClipAgent:
 
         print("Action: ", action)
         return action
-
-class Actor(torch.nn.Module):
-    def __init__(self, input_size, output_size):
-        super(Actor, self).__init__()
-        self.input_size = input_size
-        self.output_size = output_size
-
-    def forward(self, x):
-        # Return a tensor of shape output_size
-        return torch.randn(self.output_size)
-
-class Critic(torch.nn.Module):
-    def __init__(self, input_size):
-        super(Critic, self).__init__()
-        self.input_size = input_size
-
-    def forward(self, x):
-        return torch.randn(1)
 
 def create_multidimensional_mask(coordinates, shape):
     """
