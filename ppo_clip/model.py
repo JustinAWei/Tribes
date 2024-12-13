@@ -15,19 +15,17 @@ class FeatureExtractor(nn.Module):
         
         # CNN for spatial features
         self.conv_net = nn.Sequential(
-            nn.Conv2d(in_channels=27, out_channels=128, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels=27, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=3, padding=1),
-            nn.ReLU()
         )
         
         # MLP for global features
         self.global_net = nn.Sequential(
-            nn.Linear(2, 128),
+            nn.Linear(2, 32),
             nn.ReLU(),
-            nn.Linear(128, 64),
+            nn.Linear(32, 16),
             nn.ReLU()
         )
         
@@ -53,15 +51,15 @@ class Actor(nn.Module):
         self.output_size = output_size
         
         spatial_flat_size = 64 * board_size * board_size
-        combined_size = spatial_flat_size + 64
+        combined_size = spatial_flat_size + 16
 
         # Flatten output size since it's like (3, 22, 11, 11, 11, 11, 24)
         flat_output_size = math.prod(output_size)
         
         self.policy_head = nn.Sequential(
-            nn.Linear(combined_size, 512),
+            nn.Linear(combined_size, 128),
             nn.ReLU(),
-            nn.Linear(512, flat_output_size)
+            nn.Linear(128, flat_output_size)
         )
 
     def forward(self, spatial, global_features):
@@ -79,11 +77,11 @@ class Critic(nn.Module):
         combined_size = spatial_flat_size + 64
         
         self.value_head = nn.Sequential(
-            nn.Linear(combined_size, 512),
+            nn.Linear(combined_size, 128),
             nn.ReLU(),
-            nn.Linear(512, 256),
+            nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(256, 1)  # Output a single value
+            nn.Linear(64, 1)  # Output a single value
         )
 
     def forward(self, spatial, global_features):
