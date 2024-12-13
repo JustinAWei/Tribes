@@ -208,7 +208,6 @@ class PPOClipAgent:
         dones = torch.tensor([t[2] for t in self._trajectories])
 
         # Extract spatial and global features
-        # TODO: batch this
         game_states = [t[0] for t in self._trajectories]
         vectorized_game_states = game_state_to_vector(game_states)
         values = self._critic.forward(vectorized_game_states[0], vectorized_game_states[1])
