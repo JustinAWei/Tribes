@@ -5,6 +5,7 @@ import numpy as np
 from utils import MAX_EXTRA_VARS, ACTION_CATEGORIES, ACTION_TYPES
 from gymnasium.spaces import MultiDiscrete
 from vectorize_game_state import game_state_to_vector
+import requests
 
 class Actions(Enum):
     right = 0
@@ -13,13 +14,41 @@ class Actions(Enum):
     down = 3
 
 
+class TribesJavaClient:
+    def __init__(self, port=8000):
+        self.base_url = f"http://localhost:{port}"
+
+    def reset_game(self):
+        response = requests.post(f"{self.base_url}/reset")
+        print(f"Reset game response: {response.json()}")
+        return response.json()
+
+    def send_action(self, action):
+        # Convert action array to list of ints
+        print(f"Sending action: {action}")
+        response = requests.post(f"{self.base_url}/action", json={"action": action})
+        print(f"Action response: {response.json()}")
+        return response.json()
+
+    def fetch_tribes_state(self):
+        response = requests.get(f"{self.base_url}/state")
+        print(f"Fetched state: {response.json()}")
+        return response.json()
+
+
 class TribesEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    tribes_client = TribesJavaClient()
 
     _game_state = None
 
-    def __init__(self, render_mode=None, size=11):
-        self.size = size  # The size of the square grid
+    def __init__(self, render_mode=None):
+        # Parse game state
+        gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']
+        # pprint(gs)
+
+        BOARD_LEN = len(gs['board']['terrains'])
+        self.size = BOARD_LEN  # The size of the square grid
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2,
@@ -50,10 +79,10 @@ class TribesEnv(gym.Env):
     def get_game_state(self):
         # Return network response to Java
         # fetch..
-        def fetch_tribes():
+        def fetch_tribes_state():
             pass
 
-        self._game_state = fetch_tribes()
+        self._game_state = fetch_tribes_state()
         self._vector_game_state, self._info = game_state_to_vector(self._game_state)
 
 
@@ -70,7 +99,7 @@ class TribesEnv(gym.Env):
         super().reset(seed=seed)
 
         # Create a new game
-        self.get_game_state()
+        self._game_state = self.tribes_client.reset_game()
 
         observation = self._get_obs()
         info = self._get_info()
@@ -79,7 +108,7 @@ class TribesEnv(gym.Env):
 
     def step(self, action):
         # Send action to Java
-        self.send_action(action)
+        self._game_state = self.tribes_client.send_action(action)
 
         terminated = game_over(self._game_state)
         reward = reward(self._game_state)
