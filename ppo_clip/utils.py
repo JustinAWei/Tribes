@@ -95,6 +95,7 @@ def filter_actions(gs):
                 x2, y2 = x1, y1
 
             valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
+    return valid_actions
 
 
 def get_actor_x_y(actor_id, gs):
