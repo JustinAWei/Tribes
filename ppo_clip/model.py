@@ -38,13 +38,13 @@ class FeatureExtractor(nn.Module):
         
         # Process spatial
         spatial_out = self.conv_net(spatial.unsqueeze(0))  # Add a dummy batch dimension for conv layers
-        spatial_out = spatial_out.flatten(1)  # -> (64*board_size*board_size)
+        spatial_out = spatial_out.flatten()  # -> (64*board_size*board_size)
 
         # Process global
         global_out = self.global_net(global_features)  # -> (16)
         
         # Combine
-        combined = torch.cat([spatial_out, global_out], dim=0)  # -> (64*board_size*board_size + 16)
+        combined = torch.cat([spatial_out, global_out], dim=0)  # Concatenate along the feature dimension
         return combined
 
 class Actor(nn.Module):
