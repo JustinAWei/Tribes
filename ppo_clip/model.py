@@ -16,14 +16,14 @@ class PPOClipAgent:
 
         self._num_trajectories = 100
         self._epochs = 10
-        self._trajectories = defaultdict(list)
+        self._trajectories = []
 
     def run(self, id, game_state, valid_actions):
         for i in range(self._epochs * self._num_trajectories):
             
             # Collect trajectory
             action = self.get_action(game_state, valid_actions)
-            self._trajectories[id].append((game_state, action, reward_fn(game_state)))
+            self._trajectories.append((game_state, action, reward_fn(game_state)))
 
             yield action
             
@@ -122,7 +122,7 @@ class PPOClipAgent:
         action_space_logits = self._actor.forward(game_state)
 
         print(valid_actions)
-        mask = create_multidimensional_mask(torch.tensor(valid_actions), self.action_space_shape)
+        mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
         print("Mask shape:", mask.shape)
 
         # use the mask to filter the valid actions by
@@ -131,13 +131,13 @@ class PPOClipAgent:
         print("Number of nonzero elements:", torch.count_nonzero(valid_action_space), "Number of 1s in the mask:", torch.sum(mask))
 
         # softmax and choose the action
-        valid_action_space = torch.softmax(valid_action_space, dim=len(self.action_space_shape) - 1)
+        valid_action_space = torch.softmax(valid_action_space, dim=len(self.output_size) - 1)
 
         # Flatten tensor and get argmax
         flat_index = torch.argmax(valid_action_space.flatten())
         
         # Convert flat index back to multi-dimensional indices
-        action = np.unravel_index(flat_index.item(), self.action_space_shape)
+        action = np.unravel_index(flat_index.item(), self.output_size)
         # this is a np arr of np.int64, i want to convert it to a list of ints
         action = [int(i) for i in action]
 
@@ -147,18 +147,20 @@ class PPOClipAgent:
 class Actor(torch.nn.Module):
     def __init__(self, input_size, output_size):
         super(Actor, self).__init__()
-        pass
+        self.input_size = input_size
+        self.output_size = output_size
 
     def forward(self, x):
-        pass
+        # Return a tensor of shape output_size
+        return torch.randn(self.output_size)
 
 class Critic(torch.nn.Module):
     def __init__(self, input_size):
         super(Critic, self).__init__()
-        pass
+        self.input_size = input_size
 
     def forward(self, x):
-        pass
+        return torch.randn(1)
 
 def create_multidimensional_mask(coordinates, shape):
     """
