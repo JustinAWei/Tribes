@@ -9,9 +9,10 @@ from utils import reward_fn
 class PPOClipAgent:
     def __init__(self, action_space_shape):
         self.action_space_shape = action_space_shape
+        self.game_state_shape = (BOARD_LEN, BOARD_LEN, 27)
 
-        self._actor = Actor((BOARD_LEN, BOARD_LEN, 27), action_space_shape)
-        self._critic = Critic(action_space_shape)
+        self._actor = Actor(self.game_state_shape, self.action_space_shape)
+        self._critic = Critic(self.game_state_shape)
 
         self._num_trajectories = 100
         self._epochs = 10
@@ -144,7 +145,7 @@ class PPOClipAgent:
         return action
 
 class Actor(torch.nn.Module):
-    def __init__(self, game_state_shape, action_space_shape):
+    def __init__(self, input_size, output_size):
         super(Actor, self).__init__()
         pass
 
