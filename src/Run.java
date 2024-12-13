@@ -34,7 +34,7 @@ class Run {
      * @param ki - Key controller
      * @param ac - Action controller
      */
-    static void runGame(Game g, KeyController ki, ActionController ac) {
+    static void runGame(Game g, KeyController ki, ActionController ac, boolean stop) {
         WindowInput wi = null;
         GUI frame = null;
         if (VISUALS) {
@@ -45,7 +45,7 @@ class Run {
             frame.addKeyListener(ki);
         }
 
-        g.run(frame, wi);
+        g.run(frame, wi, stop);
     }
 
 
@@ -54,7 +54,7 @@ class Run {
      * @param g - game to run
      */
     static void runGame(Game g) {
-        g.run(null, null);
+        g.run(null, null, true);
     }
 
 
