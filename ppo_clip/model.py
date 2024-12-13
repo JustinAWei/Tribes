@@ -254,7 +254,7 @@ class PPOClipAgent:
         # TODO: this is not batched right now, only assuming single game
         print("valid_actions:", valid_actions)
         for action in valid_actions:
-            mask[0, action[0], action[1], action[2], action[3], action[4], action[5], action[6]] = 0.0  # Apply mask across the batch dimension
+            mask[0, action[0], action[1], action[2], action[3], action[4], action[5]] = 0.0  # Apply mask across the batch dimension
 
         # Add mask to logits to keep valid actions and mask out invalid ones
         masked_logits = new_action_space_logits + mask
