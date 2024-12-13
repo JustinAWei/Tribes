@@ -36,17 +36,17 @@ class FeatureExtractor(nn.Module):
     def forward(self, spatial, global_features):
         print("=== Feature Extractor Forward ===")
         # Rearrange spatial for CNN
-        spatial = spatial.permute(2, 0, 1)  # -> (27, board_size, board_size)
+        spatial = spatial.permute(0, 3, 1, 2)  # -> (batch_size, 27, board_size, board_size)
         
         # Process spatial
-        spatial_out = self.conv_net(spatial.unsqueeze(0))  # Add a dummy batch dimension for conv layers
-        spatial_out = spatial_out.flatten()  # -> (64*board_size*board_size)
+        spatial_out = self.conv_net(spatial)
+        spatial_out = spatial_out.flatten(start_dim=1)  # Flatten from the second dimension onwards
 
         # Process global
-        global_out = self.global_net(global_features)  # -> (16)
+        global_out = self.global_net(global_features)  # -> (batch_size, 16)
         
         # Combine
-        combined = torch.cat([spatial_out, global_out], dim=0)  # Concatenate along the feature dimension
+        combined = torch.cat([spatial_out, global_out], dim=1)  # Concatenate along the feature dimension
         return combined
 
 class Actor(nn.Module):
@@ -72,7 +72,7 @@ class Actor(nn.Module):
         combined = self.feature_extractor(spatial, global_features)
         output = self.policy_head(combined)
         # Reshape the output to the desired dimensions
-        return output.view(self.output_size)
+        return output.view(-1, *self.output_size)  # Ensure batch dimension is preserved
 
 class Critic(nn.Module):
     def __init__(self, board_size):
@@ -93,7 +93,7 @@ class Critic(nn.Module):
     def forward(self, spatial, global_features):
         print("=== Critic Forward ===")
         combined = self.feature_extractor(spatial, global_features)
-        return self.value_head(combined)  # -> single value
+        return self.value_head(combined)  # Output should be (batch_size, 1)
 
 class PPOClipAgent:
     def __init__(self, input_size, output_size):
@@ -209,8 +209,8 @@ class PPOClipAgent:
 
         # Extract spatial and global features
         game_states = [t[0] for t in self._trajectories]
-        vectorized_game_states = game_state_to_vector(game_states)
-        values = self._critic.forward(vectorized_game_states[0], vectorized_game_states[1])
+        spatial_tensors, global_infos = game_state_to_vector(game_states) # -> (batch_size, board_size, board_size, 27), (batch_size, 2)
+        values = self._critic.forward(spatial_tensors, global_infos)
 
         print("\nrewards:", rewards)
         print("\nvalues:", values) 
@@ -230,25 +230,46 @@ class PPOClipAgent:
         self.actor_optimizer.zero_grad()
 
         print("2. Getting new action logits from actor network...")
-        new_action_space_logits = self._actor.forward(spatial_tensor, global_info)
+        new_action_space_logits = self._actor.forward(spatial_tensors, global_infos)
 
         print("3. Creating and applying action mask...")
-        mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
-        masked_action_space_logits = new_action_space_logits * mask
+        # Create mask tensor of -inf everywhere
+        mask = torch.full(self.output_size, float('-inf'))
+
+        # Expand mask to match the batch dimension of logits
+        mask = mask.unsqueeze(0)
+
+        # Debug: Print the shape of logits and mask
+        print("Logits shape:", new_action_space_logits.shape)
+        print("Mask shape:", mask.shape)
+
+        # Set valid action coordinates to 0 in mask
+        # TODO: this is not batched right now, only assuming single game
+        print("valid_actions:", valid_actions)
+        for action in valid_actions:
+            mask[0, action[0], action[1], action[2], action[3], action[4], action[5], action[6]] = 0.0  # Apply mask across the batch dimension
+
+        # Add mask to logits to keep valid actions and mask out invalid ones
+        masked_logits = new_action_space_logits + mask
 
         print("4. Computing action probabilities...")
-        # regular softmax
-        masked_action_space_probs = torch.softmax(masked_action_space_logits, dim=len(self.output_size) - 1)
 
+        # Flatten logits for softmax
+        # print dimensions of masked_action_space_logits
+        masked_action_space_probs = torch.softmax(masked_logits.view(-1, masked_logits.size(-1)), dim=-1)
+
+        # Reshape actions to match the flattened logits
         print("5. Creating probability distribution...")
         dist = Categorical(masked_action_space_probs)
-        new_log_probs = dist.log_prob(actions)
-        entropy = dist.entropy()    
+        new_log_probs = dist.log_prob(actions.view(-1))
+        entropy = dist.entropy()  
 
-        print("6. Computing PPO ratios and losses...")
+        print("6. Computing PPO ratios and losses...") 
+        # Flatten old_log_probs to match new_log_probs
+        old_log_probs = old_log_probs.view(-1)
         ratio = torch.exp(new_log_probs - old_log_probs.detach())
-        surrogate1 = ratio * advantages
-        surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages
+        surrogate1 = ratio * advantages.view(-1)
+        surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages.view(-1)
         actor_loss = -torch.min(surrogate1, surrogate2).mean()
 
         print("7. Performing actor backprop...")
