@@ -29,6 +29,9 @@ public class TechView extends JComponent {
     // TODO: search functionality (i.e. "custom house -> Trade research")
     TechView(Game game, ActionController ac, InfoView infoView)
     {
+        // Reset the static nodes set for a new game
+        TechnologyNode.resetNodes();
+
         this.setLayout(new FlowLayout());
         this.infoView = infoView;
         this.game = game;
@@ -188,6 +191,11 @@ public class TechView extends JComponent {
         int offsetIdx = -1;
         int childIdx = 0;  // idx of this node in the children array of the parent
         int id;
+
+        static void resetNodes() {
+            nodes = new HashSet<>();
+            identifier = 0;
+        }
 
         TechnologyNode(Types.TECHNOLOGY t) {
             if (nodes == null) {

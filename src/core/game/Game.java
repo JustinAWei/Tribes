@@ -207,7 +207,7 @@ public class Game {
      * @param frame window to draw the game
      * @param wi    input for the window.
      */
-    public void run(GUI frame, WindowInput wi) {
+    public void run(GUI frame, WindowInput wi, boolean stop) {
         if (frame == null || wi == null)
             VISUALS = false;
 
@@ -255,6 +255,11 @@ public class Game {
                 if (!VISUALS || frame == null) {
                     // The game has ended, end the loop if we're running without visuals.
                     break;
+                }
+
+                if (!stop) {
+                    // If we're not at the end of our series of games, close the frame and go next
+                    frame.dispose();
                 }
             }
             if (!gameOver) {

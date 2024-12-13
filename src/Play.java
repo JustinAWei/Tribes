@@ -41,64 +41,68 @@ public class Play {
             JSONObject config = new IO().readJSON("play.json");
 
             if (config != null && !config.isEmpty()) {
-                String runMode = config.getString("Run Mode");
-                Constants.VERBOSE = config.getBoolean("Verbose");
+                int numGames = config.getInt("Number of Games");
+                for (int gameIndex = 0; gameIndex < numGames; gameIndex++) {
+                    boolean stop = (gameIndex == numGames - 1);
+                    System.out.println("Loading game " + gameIndex);
+                    String runMode = config.getString("Run Mode");
+                    Constants.VERBOSE = config.getBoolean("Verbose");
 
-                JSONArray playersArray = (JSONArray) config.get("Players");
-                JSONArray tribesArray = (JSONArray) config.get("Tribes");
-                if (playersArray.length() != tribesArray.length())
-                    throw new Exception("Number of players must be equal to number of tribes");
+                    JSONArray playersArray = (JSONArray) config.get("Players");
+                    JSONArray tribesArray = (JSONArray) config.get("Tribes");
+                    if (playersArray.length() != tribesArray.length())
+                        throw new Exception("Number of players must be equal to number of tribes");
 
-                int nPlayers = playersArray.length();
-                Run.PlayerType[] playerTypes = new Run.PlayerType[nPlayers];
-                Types.TRIBE[] tribes = new Types.TRIBE[nPlayers];
+                    int nPlayers = playersArray.length();
+                    Run.PlayerType[] playerTypes = new Run.PlayerType[nPlayers];
+                    Types.TRIBE[] tribes = new Types.TRIBE[nPlayers];
 
-                for (int i = 0; i < nPlayers; ++i) {
-                    playerTypes[i] = Run.parsePlayerTypeStr(playersArray.getString(i));
-                    tribes[i] = Run.parseTribeStr(tribesArray.getString(i));
+                    for (int i = 0; i < nPlayers; ++i) {
+                        playerTypes[i] = Run.parsePlayerTypeStr(playersArray.getString(i));
+                        tribes[i] = Run.parseTribeStr(tribesArray.getString(i));
+                    }
+                    Types.GAME_MODE gameMode = config.getString("Game Mode").equalsIgnoreCase("Capitals") ?
+                            CAPITALS : SCORE;
+
+                    Run.MAX_LENGTH = config.getInt("Search Depth");
+                    Run.FORCE_TURN_END = config.getBoolean("Force End");
+                    Run.MCTS_ROLLOUTS = config.getBoolean("Rollouts");
+                    Run.POP_SIZE = config.getInt("Population Size");
+
+                    //Portfolio and pruning variables:
+                    Run.PRUNING = config.getBoolean("Pruning");
+                    Run.PROGBIAS = config.getBoolean("Progressive Bias");
+                    Run.K_INIT_MULT = config.getDouble("K init mult");
+                    Run.T_MULT = config.getDouble("T mult");
+                    Run.A_MULT = config.getDouble("A mult");
+                    Run.B = config.getDouble("B");
+
+                    JSONArray weights = null;
+                    if (config.has("pMCTS Weights"))
+                        weights = (JSONArray) config.get("pMCTS Weights");
+                    Run.pMCTSweights = Run.getWeights(weights);
+
+                    AGENT_SEED = config.getLong("Agents Seed");
+                    GAME_SEED = config.getLong("Game Seed");
+                    long levelSeed = config.getLong("Level Seed");
+
+                    //1. Play one game with visuals using the Level Generator:
+                    if (runMode.equalsIgnoreCase("PlayLG")) {
+                        play(tribes, levelSeed, playerTypes, gameMode, stop);
+
+                        //2. Play one game with visuals from a file:
+                    } else if (runMode.equalsIgnoreCase("PlayFile")) {
+                        String levelFile = config.getString("Level File");
+                        play(levelFile, playerTypes, gameMode, stop);
+
+                        //3. Play one game with visuals from a savegame
+                    } else if (runMode.equalsIgnoreCase("Replay")) {
+                        String saveGameFile = config.getString("Replay File Name");
+                        load(playerTypes, saveGameFile);
+                    } else {
+                        System.out.println("ERROR: run mode '" + runMode + "' not recognized.");
+                    }
                 }
-                Types.GAME_MODE gameMode = config.getString("Game Mode").equalsIgnoreCase("Capitals") ?
-                        CAPITALS : SCORE;
-
-                Run.MAX_LENGTH = config.getInt("Search Depth");
-                Run.FORCE_TURN_END = config.getBoolean("Force End");
-                Run.MCTS_ROLLOUTS = config.getBoolean("Rollouts");
-                Run.POP_SIZE = config.getInt("Population Size");
-
-                //Portfolio and pruning variables:
-                Run.PRUNING = config.getBoolean("Pruning");
-                Run.PROGBIAS = config.getBoolean("Progressive Bias");
-                Run.K_INIT_MULT = config.getDouble("K init mult");
-                Run.T_MULT = config.getDouble("T mult");
-                Run.A_MULT = config.getDouble("A mult");
-                Run.B = config.getDouble("B");
-
-                JSONArray weights = null;
-                if(config.has("pMCTS Weights"))
-                    weights = (JSONArray) config.get("pMCTS Weights");
-                Run.pMCTSweights = Run.getWeights(weights);
-
-                AGENT_SEED = config.getLong("Agents Seed");
-                GAME_SEED = config.getLong("Game Seed");
-                long levelSeed = config.getLong("Level Seed");
-
-                //1. Play one game with visuals using the Level Generator:
-                if (runMode.equalsIgnoreCase("PlayLG")) {
-                    play(tribes, levelSeed, playerTypes, gameMode);
-
-                //2. Play one game with visuals from a file:
-                } else if (runMode.equalsIgnoreCase("PlayFile")) {
-                    String levelFile = config.getString("Level File");
-                    play(levelFile, playerTypes, gameMode);
-
-                //3. Play one game with visuals from a savegame
-                } else if (runMode.equalsIgnoreCase("Replay")) {
-                    String saveGameFile = config.getString("Replay File Name");
-                    load(playerTypes, saveGameFile);
-                } else {
-                    System.out.println("ERROR: run mode '" + runMode + "' not recognized.");
-                }
-
             } else {
                 System.out.println("ERROR: Couldn't find 'play.json'");
             }
@@ -108,22 +112,22 @@ public class Play {
         }
     }
 
-    private static void play(Types.TRIBE[] tribes, long levelSeed, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode)
+    private static void play(Types.TRIBE[] tribes, long levelSeed, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode, boolean stop)
     {
         KeyController ki = new KeyController(true);
         ActionController ac = new ActionController();
 
         Game game = _prepareGame(tribes, levelSeed, playerTypes, gameMode, ac);
-        Run.runGame(game, ki, ac);
+        Run.runGame(game, ki, ac, stop);
     }
 
-    private static void play(String levelFile, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode)
+    private static void play(String levelFile, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode, boolean stop)
     {
         KeyController ki = new KeyController(true);
         ActionController ac = new ActionController();
 
         Game game = _prepareGame(levelFile, playerTypes, gameMode, ac);
-        Run.runGame(game, ki, ac);
+        Run.runGame(game, ki, ac, stop);
     }
 
 
@@ -135,7 +139,7 @@ public class Play {
         long agentSeed = AGENT_SEED == -1 ? System.currentTimeMillis() + new Random().nextInt() : AGENT_SEED;
 
         Game game = _loadGame(playerTypes, saveGameFile, agentSeed);
-        Run.runGame(game, ki, ac);
+        Run.runGame(game, ki, ac, true);
     }
 
 
