@@ -357,7 +357,7 @@ class PPOClipAgent:
         flat_indices = dist.sample()  # Will sample for each item in batch
         print("flat_indices shape:", flat_indices.shape)
         # turn into multi-dimensional action
-        actions = torch.tensor(np.unravel_index(flat_indices, self.output_size))
+        actions = torch.tensor(np.array(np.unravel_index(flat_indices, self.output_size)))
         print("actions shape:", actions.shape)
 
         # compute rewards
