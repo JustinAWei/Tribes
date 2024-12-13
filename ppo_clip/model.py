@@ -8,6 +8,7 @@ from utils import BOARD_LEN
 from utils import reward_fn
 from torch import optim
 import math
+from vectorize_game_state import game_state_to_vector
 # To reduce duplicate code, this is used for both the actor and the critic
 class FeatureExtractor(nn.Module):
     def __init__(self):
@@ -206,7 +207,8 @@ class PPOClipAgent:
         # Maximize PPO-clip objective
         self.actor_optimizer.zero_grad()
 
-        new_action_space_logits = self._actor.forward(game_state)
+        spatial_tensor, global_info = game_state_to_vector(game_state)
+        new_action_space_logits = self._actor.forward(spatial_tensor, global_info)
 
         mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
         masked_action_space_logits = new_action_space_logits * mask
@@ -218,7 +220,6 @@ class PPOClipAgent:
         new_log_probs = dist.log_prob(actions)
         entropy = dist.entropy()    
 
-        # TODO: old_log_probs is not defined
         ratio = torch.exp(new_log_probs - old_log_probs.detach())
         surrogate1 = ratio * advantages
         surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages
@@ -237,7 +238,8 @@ class PPOClipAgent:
         return new_log_probs
 
     def get_action(self, game_state, valid_actions):
-        action_space_logits = self._actor.forward(game_state)
+        spatial_tensor, global_info = game_state_to_vector(game_state)
+        action_space_logits = self._actor.forward(spatial_tensor, global_info)
 
         print(valid_actions)
         mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
