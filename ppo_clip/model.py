@@ -256,9 +256,9 @@ class PPOClipAgent:
 
         # Flatten logits for softmax
         # print dimensions of masked_action_space_logits
-        masked_action_space_probs = torch.softmax(masked_logits.view(-1, masked_logits.size(-1)), dim=-1)
-
-        # Reshape actions to match the flattened logits
+        masked_action_space_probs = torch.softmax(masked_logits.flatten(), dim=0)
+        print("masked_action_space_probs:", masked_action_space_probs)
+        
         print("5. Creating probability distribution...")
         dist = Categorical(masked_action_space_probs)
         new_log_probs = dist.log_prob(actions.view(-1))

@@ -31,7 +31,7 @@ async def receive_data(request: Request):
         # BOARD_SIZE = BOARD_LEN ** 2
         
         valid_actions = filter_actions(gs)
-
+        
         action = agent.run(0, gs, valid_actions)
         print("Action: ", action)
 
