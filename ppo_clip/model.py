@@ -130,9 +130,9 @@ class PPOClipAgent:
 
             yield action
             
-            if i % self._num_trajectories == 0:
-                new_log_probs = self._update(game_state, valid_actions, old_log_probs)
-                old_log_probs = new_log_probs
+            # if i % self._num_trajectories == 0:
+            #     new_log_probs = self._update(game_state, valid_actions, old_log_probs)
+            #     old_log_probs = new_log_probs
 
     def rewards_to_go(self, rewards, dones, gamma=0.99):
         """
