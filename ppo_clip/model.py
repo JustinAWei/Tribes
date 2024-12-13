@@ -78,7 +78,7 @@ class Critic(nn.Module):
         self.feature_extractor = FeatureExtractor()
         
         spatial_flat_size = 64 * board_size * board_size
-        combined_size = spatial_flat_size + 64
+        combined_size = spatial_flat_size + 16
         
         self.value_head = nn.Sequential(
             nn.Linear(combined_size, 128),
