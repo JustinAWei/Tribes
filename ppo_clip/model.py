@@ -9,6 +9,7 @@ from utils import reward_fn
 from torch import optim
 import math
 from vectorize_game_state import game_state_to_vector
+from torch.distributions import Categorical
 
 # To reduce duplicate code, this is used for both the actor and the critic
 # NOTE: we are not batching the input for now
@@ -197,7 +198,11 @@ class PPOClipAgent:
     def _update(self, game_state, valid_actions, old_log_probs):
         # Rewards-to-go
         rewards = torch.tensor([t[2] for t in self._trajectories])
-        values = self._critic.forward(game_state)
+
+        # Extract spatial and global features
+        spatial_tensor, global_info = game_state_to_vector(game_state)
+
+        values = self._critic.forward(spatial_tensor, global_info)
         dones = torch.tensor([t[2] for t in self._trajectories])
 
         rewards_to_go = self.rewards_to_go(rewards, values, dones)
@@ -205,11 +210,13 @@ class PPOClipAgent:
         # Advantage
         advantages = self.advantage(rewards, values, dones)
 
+        # Extract actions from trajectories
+        actions = torch.tensor([t[1] for t in self._trajectories])
+
         # Actor: SGD with Adam optimizer
         # Maximize PPO-clip objective
         self.actor_optimizer.zero_grad()
 
-        spatial_tensor, global_info = game_state_to_vector(game_state)
         new_action_space_logits = self._actor.forward(spatial_tensor, global_info)
 
         mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
