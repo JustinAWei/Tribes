@@ -7,7 +7,7 @@ from torch.nn import MSELoss
 from utils import BOARD_LEN
 from utils import reward_fn
 from torch import optim
-
+import math
 # To reduce duplicate code, this is used for both the actor and the critic
 class FeatureExtractor(nn.Module):
     def __init__(self):
@@ -50,19 +50,25 @@ class Actor(nn.Module):
     def __init__(self, board_size, output_size):
         super(Actor, self).__init__()
         self.feature_extractor = FeatureExtractor()
+        self.output_size = output_size
         
         spatial_flat_size = 64 * board_size * board_size
         combined_size = spatial_flat_size + 64
+
+        # Flatten output size since it's like (3, 22, 11, 11, 11, 11, 24)
+        flat_output_size = math.prod(output_size)
         
         self.policy_head = nn.Sequential(
             nn.Linear(combined_size, 512),
             nn.ReLU(),
-            nn.Linear(512, output_size)
+            nn.Linear(512, flat_output_size)
         )
 
     def forward(self, spatial, global_features):
         combined = self.feature_extractor(spatial, global_features)
-        return self.policy_head(combined)  # -> (batch, output_size)
+        output = self.policy_head(combined)
+        # Reshape the output to the desired dimensions
+        return output.view(-1, *self.output_size)  # -1 infers the batch size
 
 class Critic(nn.Module):
     def __init__(self, board_size):
@@ -86,6 +92,7 @@ class Critic(nn.Module):
 
 class PPOClipAgent:
     def __init__(self, input_size, output_size):
+        print("Initializing PPOClipAgent", output_size)
         self.input_size = input_size
         self.output_size = output_size
 
