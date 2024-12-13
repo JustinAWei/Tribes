@@ -270,51 +270,27 @@ class PPOClipAgent:
         return new_log_probs
 
     def get_action(self, game_state, valid_actions):
-        print("=== Getting Action ===")
-        spatial_tensor, global_info = game_state_to_vector([game_state])
-        action_space_logits = self._actor.forward(spatial_tensor, global_info)
-
-        # print(valid_actions)
-        mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
-        # print("Mask shape:", mask.shape)
-
-        # use the mask to filter the valid actions by
-        masked_action_space_logits = action_space_logits * mask
-        # count nonzero elements
-        # print("Number of nonzero elements:", torch.count_nonzero(masked_action_space_logits), "Number of 1s in the mask:", torch.sum(mask))
-
-        # softmax and choose the action
-        masked_action_space_probs = torch.softmax(masked_action_space_logits, dim=len(self.output_size) - 1)
-
-        # Flatten tensor and get argmax
-        flat_index = torch.argmax(masked_action_space_probs.flatten())
+        # Get state features
+        [spatial_tensor, global_info] = game_state_to_vector([game_state])
         
-        # Convert flat index back to multi-dimensional indices
-        action = np.unravel_index(flat_index.item(), self.output_size)
-        # this is a np arr of np.int64, i want to convert it to a list of ints
-        action = [int(i) for i in action]
+        # Get action logits from actor network
+        logits = self._actor.forward(spatial_tensor, global_info)
+        
+        # Create mask tensor of -inf everywhere
+        mask = torch.full(self.output_size, float('-inf'))
+        
+        # Set valid action coordinates to 0 in mask
+        for action in valid_actions:
+            mask[tuple(action)] = 0.0
+            
+        # Add mask to logits to keep valid actions and mask out invalid ones
+        masked_logits = logits + mask
 
+        # Get action probabilities and select action
+        probs = torch.softmax(masked_logits.flatten(), dim=0)
+        flat_index = torch.argmax(probs)
+        
+        # Convert to multi-dimensional action
+        action = [int(i) for i in np.unravel_index(flat_index.item(), self.output_size)]
+        
         return action
-
-def create_multidimensional_mask(coordinates, shape):
-    """
-    Create a multi-dimensional mask with zeros and set specified coordinates to 1.
-
-    Parameters:
-    - coordinates: List of coordinate lists/tuples, where each inner list/tuple
-                   represents a coordinate across all dimensions
-    - shape: Tuple specifying the dimensions of the mask
-
-    Returns:
-    - NumPy array mask with 1s at specified coordinates
-    """
-    # Create a zero matrix with the specified shape
-    mask = torch.zeros(shape, dtype=torch.int)
-
-    # Set the specified coordinates to 1
-    for coord in coordinates:
-        # Ensure the coordinate is within the matrix bounds
-        if len(coord) == len(shape) and all(0 <= c < s for c, s in zip(coord, shape)):
-            mask[tuple(coord)] = 1
-
-    return mask
