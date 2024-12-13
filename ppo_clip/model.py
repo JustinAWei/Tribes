@@ -11,6 +11,7 @@ import math
 from vectorize_game_state import game_state_to_vector
 
 # To reduce duplicate code, this is used for both the actor and the critic
+# NOTE: we are not batching the input for now
 class FeatureExtractor(nn.Module):
     def __init__(self):
         super(FeatureExtractor, self).__init__()
@@ -33,17 +34,17 @@ class FeatureExtractor(nn.Module):
         
     def forward(self, spatial, global_features):
         # Rearrange spatial for CNN
-        spatial = spatial.permute(0, 3, 1, 2)  # -> (batch, 27, board_size, board_size)
+        spatial = spatial.permute(2, 0, 1)  # -> (27, board_size, board_size)
         
         # Process spatial
-        spatial_out = self.conv_net(spatial)  # -> (batch, 64, board_size, board_size)
-        spatial_out = spatial_out.flatten(1)   # -> (batch, 64*board_size*board_size)
-        
+        spatial_out = self.conv_net(spatial.unsqueeze(0))  # Add a dummy batch dimension for conv layers
+        spatial_out = spatial_out.flatten(1)  # -> (64*board_size*board_size)
+
         # Process global
-        global_out = self.global_net(global_features)  # -> (batch, 64)
+        global_out = self.global_net(global_features)  # -> (16)
         
         # Combine
-        combined = torch.cat([spatial_out, global_out], dim=1)  # -> (batch, 64*board_size*board_size + 64)
+        combined = torch.cat([spatial_out, global_out], dim=0)  # -> (64*board_size*board_size + 16)
         return combined
 
 class Actor(nn.Module):
@@ -68,7 +69,7 @@ class Actor(nn.Module):
         combined = self.feature_extractor(spatial, global_features)
         output = self.policy_head(combined)
         # Reshape the output to the desired dimensions
-        return output.view(-1, *self.output_size)  # -1 infers the batch size
+        return output.view(self.output_size)
 
 class Critic(nn.Module):
     def __init__(self, board_size):
@@ -88,7 +89,7 @@ class Critic(nn.Module):
 
     def forward(self, spatial, global_features):
         combined = self.feature_extractor(spatial, global_features)
-        return self.value_head(combined)  # -> (batch, 1)
+        return self.value_head(combined)  # -> single value
 
 class PPOClipAgent:
     def __init__(self, input_size, output_size):

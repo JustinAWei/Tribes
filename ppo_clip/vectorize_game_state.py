@@ -313,7 +313,7 @@ def game_state_to_vector(gs):
         unit_array,
         city_array,
         trade_network
-    ], dim=2)
+    ], dim=2).float()
 
     # Get global information
     global_info = torch.tensor([
