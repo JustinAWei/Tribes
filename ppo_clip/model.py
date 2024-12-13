@@ -5,6 +5,7 @@ from collections import defaultdict
 from torch.nn import MSELoss
 from utils import BOARD_LEN
 from utils import reward_fn
+from torch import optim
 
 class PPOClipAgent:
     def __init__(self, input_size, output_size):
@@ -16,8 +17,8 @@ class PPOClipAgent:
 
         lr = 0.0001
 
-        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr)
-        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr)
+        self.actor_optimizer = optim.Adam(self._actor.parameters(), lr=lr)
+        self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
         self._num_trajectories = 100
         self._epochs = 10
@@ -27,12 +28,14 @@ class PPOClipAgent:
         """
         Move the model to the specified device.
         """
-        self.actor = self.actor.to(device)
-        self.critic = self.critic.to(device)
+        self._actor = self._actor.to(device)
+        self._critic = self._critic.to(device)
         self.device = device
         return self
         
     def run(self, id, game_state, valid_actions):
+        old_log_probs = torch.randn(self.output_size)
+
         for i in range(self._epochs * self._num_trajectories):
             
             # Collect trajectory
@@ -42,7 +45,8 @@ class PPOClipAgent:
             yield action
             
             if i % self._num_trajectories == 0:
-                self._update(game_state, valid_actions)
+                new_log_probs = self._update(game_state, valid_actions, old_log_probs)
+                old_log_probs = new_log_probs
 
     def rewards_to_go(self, rewards, dones, gamma=0.99):
         """
@@ -119,8 +123,26 @@ class PPOClipAgent:
         # Actor: SGD with Adam optimizer
         # Maximize PPO-clip objective
         self.actor_optimizer.zero_grad()
-        loss = self.ppo_clip_objective(rewards_to_go, advantages)
-        loss.backward()
+
+        new_action_space_logits = self._actor.forward(game_state)
+
+        mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
+        masked_action_space_logits = new_action_space_logits * mask
+
+        # regular softmax
+        masked_action_space_probs = torch.softmax(masked_action_space_logits, dim=len(self.output_size) - 1)
+
+        dist = Categorical(masked_action_space_probs)
+        new_log_probs = dist.log_prob(actions)
+        entropy = dist.entropy()    
+
+        # TODO: old_log_probs is not defined
+        ratio = torch.exp(new_log_probs - old_log_probs.detach())
+        surrogate1 = ratio * advantages
+        surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages
+        actor_loss = -torch.min(surrogate1, surrogate2).mean()
+
+        actor_loss.backward()
         self.actor_optimizer.step()
 
         # Critic: SGD with Adam optimizer
@@ -130,6 +152,8 @@ class PPOClipAgent:
         loss.backward()
         self.critic_optimizer.step()
 
+        return new_log_probs
+
     def get_action(self, game_state, valid_actions):
         action_space_logits = self._actor.forward(game_state)
 
@@ -138,15 +162,15 @@ class PPOClipAgent:
         print("Mask shape:", mask.shape)
 
         # use the mask to filter the valid actions by
-        valid_action_space = action_space_logits * mask
+        masked_action_space_logits = action_space_logits * mask
         # count nonzero elements
-        print("Number of nonzero elements:", torch.count_nonzero(valid_action_space), "Number of 1s in the mask:", torch.sum(mask))
+        print("Number of nonzero elements:", torch.count_nonzero(masked_action_space_logits), "Number of 1s in the mask:", torch.sum(mask))
 
         # softmax and choose the action
-        valid_action_space = torch.softmax(valid_action_space, dim=len(self.output_size) - 1)
+        masked_action_space_probs = torch.softmax(masked_action_space_logits, dim=len(self.output_size) - 1)
 
         # Flatten tensor and get argmax
-        flat_index = torch.argmax(valid_action_space.flatten())
+        flat_index = torch.argmax(masked_action_space_probs.flatten())
         
         # Convert flat index back to multi-dimensional indices
         action = np.unravel_index(flat_index.item(), self.output_size)
