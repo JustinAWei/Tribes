@@ -14,10 +14,24 @@ class PPOClipAgent:
         self._actor = Actor(self.input_size, self.output_size)
         self._critic = Critic(self.input_size)
 
+        lr = 0.0001
+
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr)
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr)
+
         self._num_trajectories = 100
         self._epochs = 10
         self._trajectories = []
 
+    def to(self, device):
+        """
+        Move the model to the specified device.
+        """
+        self.actor = self.actor.to(device)
+        self.critic = self.critic.to(device)
+        self.device = device
+        return self
+        
     def run(self, id, game_state, valid_actions):
         for i in range(self._epochs * self._num_trajectories):
             
@@ -104,19 +118,17 @@ class PPOClipAgent:
 
         # Actor: SGD with Adam optimizer
         # Maximize PPO-clip objective
-        optimizer = torch.optim.Adam(self._actor.parameters(), lr=0.001)
-        optimizer.zero_grad()
+        self.actor_optimizer.zero_grad()
         loss = self.ppo_clip_objective(rewards_to_go, advantages)
         loss.backward()
-        optimizer.step()
+        self.actor_optimizer.step()
 
         # Critic: SGD with Adam optimizer
         # Minimize MSE loss
-        optimizer = torch.optim.Adam(self._critic.parameters(), lr=0.001)
-        optimizer.zero_grad()
+        self.critic_optimizer.zero_grad()
         loss = MSELoss(rewards_to_go, values)
         loss.backward()
-        optimizer.step()
+        self.critic_optimizer.step()
 
     def get_action(self, game_state, valid_actions):
         action_space_logits = self._actor.forward(game_state)
