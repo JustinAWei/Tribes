@@ -34,6 +34,7 @@ class FeatureExtractor(nn.Module):
         )
         
     def forward(self, spatial, global_features):
+        print("=== Feature Extractor Forward ===")
         # Rearrange spatial for CNN
         spatial = spatial.permute(2, 0, 1)  # -> (27, board_size, board_size)
         
@@ -67,6 +68,7 @@ class Actor(nn.Module):
         )
 
     def forward(self, spatial, global_features):
+        print("=== Actor Forward ===")
         combined = self.feature_extractor(spatial, global_features)
         output = self.policy_head(combined)
         # Reshape the output to the desired dimensions
@@ -89,6 +91,7 @@ class Critic(nn.Module):
         )
 
     def forward(self, spatial, global_features):
+        print("=== Critic Forward ===")
         combined = self.feature_extractor(spatial, global_features)
         return self.value_head(combined)  # -> single value
 
@@ -106,7 +109,7 @@ class PPOClipAgent:
         self.actor_optimizer = optim.Adam(self._actor.parameters(), lr=lr)
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
-        self._batch_size = 16
+        self._batch_size = 4
         self._epochs = 10
         self._trajectories = []
         self._counter = 0
@@ -196,6 +199,7 @@ class PPOClipAgent:
         return advantages
 
     def _update(self, game_state, valid_actions, old_log_probs):
+        print("=== Update ===")
         # Rewards-to-go
         rewards = torch.tensor([t[2] for t in self._trajectories])
 
@@ -263,6 +267,7 @@ class PPOClipAgent:
         return new_log_probs
 
     def get_action(self, game_state, valid_actions):
+        print("=== Getting Action ===")
         spatial_tensor, global_info = game_state_to_vector(game_state)
         action_space_logits = self._actor.forward(spatial_tensor, global_info)
 
