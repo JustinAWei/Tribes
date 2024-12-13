@@ -149,7 +149,7 @@ public class PPOAgent extends Agent {
                                 filteredActions.add(a);
                             }
                         }
-                        else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN) {
+                        else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN || actionType == Types.ACTION.DISBAND) {
                             filteredActions.add(a);
                         }
                     }

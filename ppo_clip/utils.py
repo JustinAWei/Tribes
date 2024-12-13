@@ -90,7 +90,7 @@ def filter_actions(gs):
             elif 'cityId' in action:
                 x2, y2 = get_actor_x_y(int(action['cityId']), gs)
 
-            elif action.get('actionType') in ['CAPTURE', 'RECOVER', 'EXAMINE', 'MAKE_VETERAN']:
+            elif action.get('actionType') in ['CAPTURE', 'RECOVER', 'EXAMINE', 'MAKE_VETERAN', 'DISBAND']:
                 # Assumption: These are always to the same position as the unit
                 x2, y2 = x1, y1
 
@@ -139,6 +139,7 @@ ACTION_TYPES = {
 
     "ATTACK": 13,
     "CAPTURE": 14,
+    "DISBAND": 16,
     "EXAMINE": 17,
     "MAKE_VETERAN": 19,
     "MOVE": 20,
