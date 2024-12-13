@@ -308,7 +308,8 @@ class PPOClipAgent:
 
         # Get action probabilities and select action
         probs = torch.softmax(masked_logits.flatten(), dim=0)
-        flat_index = torch.argmax(probs)
+        dist = Categorical(probs)
+        flat_index = dist.sample()
         
         # Convert to multi-dimensional action
         action = [int(i) for i in np.unravel_index(flat_index.item(), self.output_size)]

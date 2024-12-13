@@ -56,8 +56,6 @@ def filter_actions(gs):
                 valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, building_type])
             elif action.get('actionType') == 'SPAWN':
                 unit_type = UNIT_TYPES[action.get('unit_type')]
-                print(action.get('unit_type'))
-                print(unit_type)
                 valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, unit_type])
             elif action.get('actionType') == 'LEVEL_UP':
                 bonus_type = BONUS_TYPES[action.get('bonus')]
@@ -90,7 +88,7 @@ def filter_actions(gs):
             elif 'cityId' in action:
                 x2, y2 = get_actor_x_y(int(action['cityId']), gs)
 
-            elif action.get('actionType') in ['CAPTURE', 'RECOVER', 'EXAMINE', 'MAKE_VETERAN', 'DISBAND']:
+            elif action.get('actionType') in ['CAPTURE', 'RECOVER', 'EXAMINE', 'MAKE_VETERAN', 'DISBAND', 'UPGRADE_BOAT', 'UPGRADE_SHIP']:
                 # Assumption: These are always to the same position as the unit
                 x2, y2 = x1, y1
 
@@ -144,7 +142,10 @@ ACTION_TYPES = {
     "EXAMINE": 17,
     "MAKE_VETERAN": 19,
     "MOVE": 20,
-    "RECOVER": 21
+    "RECOVER": 21,
+
+    "UPGRADE_BOAT": 23,
+    "UPGRADE_SHIP": 24,
 }
 
 # Reversed dictionary for action categories

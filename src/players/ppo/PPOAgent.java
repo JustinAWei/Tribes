@@ -154,7 +154,7 @@ public class PPOAgent extends Agent {
                             filteredActions.add(a);
                         }
                     }
-                    else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN || actionType == Types.ACTION.DISBAND) {
+                    else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN || actionType == Types.ACTION.DISBAND || actionType == Types.ACTION.UPGRADE_BOAT || actionType == Types.ACTION.UPGRADE_SHIP) {
                         filteredActions.add(a);
                     }
                 }
