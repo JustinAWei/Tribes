@@ -124,6 +124,7 @@ class PPOClipAgent:
         return self
         
     def run(self, id, game_state, valid_actions):
+        # TODO: fix old_log_probs calculation
         old_log_probs = torch.randn(self.output_size)
         self._counter += 1
 
@@ -223,7 +224,13 @@ class PPOClipAgent:
         print("\nadvantages:", advantages)
 
         # Extract actions from trajectories
-        actions = torch.tensor([t[1] for t in self._trajectories])
+#         actions = torch.tensor([t[1] for t in self._trajectories])
+# 
+#         # Convert the multi-dimensional action index to a flat index
+#         flat_action_index = np.ravel_multi_index(action, self.output_size)
+# 
+#         # Convert to a tensor
+#         action_tensor = torch.tensor([flat_action_index], dtype=torch.long)
 
         print("\n=== Actor Update ===")
         print("1. Zeroing actor gradients...")
@@ -257,7 +264,7 @@ class PPOClipAgent:
         # Flatten logits for softmax
         # print dimensions of masked_action_space_logits
         masked_action_space_probs = torch.softmax(masked_logits.flatten(), dim=0)
-        print("masked_action_space_probs:", masked_action_space_probs)
+        print("masked_action_space_probs:", masked_action_space_probs.shape)
         
         print("5. Creating probability distribution...")
         dist = Categorical(masked_action_space_probs)
@@ -265,8 +272,16 @@ class PPOClipAgent:
         entropy = dist.entropy()  
 
         print("6. Computing PPO ratios and losses...") 
-        # Flatten old_log_probs to match new_log_probs
+        # Ensure old_log_probs and new_log_probs have the same shape as advantages
         old_log_probs = old_log_probs.view(-1)
+        new_log_probs = new_log_probs.view(-1)
+        advantages = advantages.view(-1)
+
+        # Debug: Print shapes to verify they match
+        print("old_log_probs shape:", old_log_probs.shape)
+        print("new_log_probs shape:", new_log_probs.shape)
+        print("advantages shape:", advantages.shape)
+
         ratio = torch.exp(new_log_probs - old_log_probs.detach())
         surrogate1 = ratio * advantages.view(-1)
         surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages.view(-1)
