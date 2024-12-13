@@ -9,6 +9,7 @@ from utils import reward_fn
 from torch import optim
 import math
 from vectorize_game_state import game_state_to_vector
+
 # To reduce duplicate code, this is used for both the actor and the critic
 class FeatureExtractor(nn.Module):
     def __init__(self):
