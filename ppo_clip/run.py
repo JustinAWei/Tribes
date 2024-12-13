@@ -9,6 +9,7 @@ from datetime import datetime
 
 from utils import ACTION_CATEGORIES, ACTION_TYPES, TECH_TYPES, BUILDING_TYPES, UNIT_TYPES, MASK, get_actor_x_y, BONUS_TYPES
 from model import ppo_clip
+from spinup import ppo_pytorch as ppo
 
 # Create FastAPI app
 app = FastAPI()
