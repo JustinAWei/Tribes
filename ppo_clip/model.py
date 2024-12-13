@@ -7,12 +7,12 @@ from utils import BOARD_LEN
 from utils import reward_fn
 
 class PPOClipAgent:
-    def __init__(self, action_space_shape):
-        self.action_space_shape = action_space_shape
-        self.game_state_shape = (BOARD_LEN, BOARD_LEN, 27)
+    def __init__(self, input_size, output_size):
+        self.input_size = input_size
+        self.output_size = output_size
 
-        self._actor = Actor(self.game_state_shape, self.action_space_shape)
-        self._critic = Critic(self.game_state_shape)
+        self._actor = Actor(self.input_size, self.output_size)
+        self._critic = Critic(self.input_size)
 
         self._num_trajectories = 100
         self._epochs = 10

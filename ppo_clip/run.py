@@ -12,8 +12,10 @@ from model import PPOClipAgent
 from utils import BOARD_LEN
 
 
+game_state_shape = (BOARD_LEN, BOARD_LEN, 27)
 action_space_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, MAX_EXTRA_VARS)
-agent = PPOClipAgent(action_space_shape)
+
+agent = PPOClipAgent(game_state_shape, action_space_shape)
 
 # Create FastAPI app
 app = FastAPI()
