@@ -554,6 +554,16 @@ public class Game {
     }
 
     /**
+     * Returns the game state as seen for the active player. This game state
+     * includes only the observations that are visible if partial observability is enabled.
+     * @return the game state.
+     */
+    public GameState getGameStateForActivePlayer() {
+        int activePlayerIdx = gs.getActiveTribeID();
+        return gs.copy(activePlayerIdx);
+    }
+
+    /**
      * Returns the game board.
      * @return the game board.
      */
