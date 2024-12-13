@@ -36,8 +36,37 @@ UNIT_TYPE_MAP = {
     'BOAT': 8, 'SHIP': 9, 'BATTLESHIP': 10, 'SUPERUNIT': 11
 }
 
+def game_state_to_vector(gs_list):
+    """
+    Vectorize a batch of game states into tensors.
+    
+    Args:
+        gs_list: List of game states or single game state
+        
+    Returns:
+        spatial_tensor: Shape (batch_size, board_size, board_size, 27)
+        global_info: Shape (batch_size, 2)
+    """
+    # Handle single game state case
+    if not isinstance(gs_list, list):
+        gs_list = [gs_list]
+    
+    batch_size = len(gs_list)
+    board_size = len(gs_list[0]['board']['terrains'])
+    
+    # Initialize batch tensors
+    spatial_tensors = torch.zeros((batch_size, board_size, board_size, 27), dtype=torch.float32)
+    global_infos = torch.zeros((batch_size, 2), dtype=torch.float32)
+    
+    # Process each game state
+    for i, gs in enumerate(gs_list):
+        spatial_tensor, global_info = _process_single_game_state(gs)
+        spatial_tensors[i] = spatial_tensor
+        global_infos[i] = global_info
+        
+    return spatial_tensors, global_infos
 
-def game_state_to_vector(gs):
+def _process_single_game_state(gs):
     """
     Vectorize the game state into a numpy array. Below is the structure of the game state (and below that is the vectorization of the relevant features since not all features are relevant to the game for now).
 

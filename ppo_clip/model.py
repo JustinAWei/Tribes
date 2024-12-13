@@ -109,7 +109,7 @@ class PPOClipAgent:
         self.actor_optimizer = optim.Adam(self._actor.parameters(), lr=lr)
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
-        self._batch_size = 4
+        self._batch_size = 1
         self._epochs = 10
         self._trajectories = []
         self._counter = 0
@@ -176,6 +176,7 @@ class PPOClipAgent:
         Returns:
             torch.Tensor: Advantages for each timestep
         """
+        print("=== Advantage ===")
         advantages = torch.zeros_like(rewards)
         last_advantage = 0
         last_value = values[-1]
@@ -204,21 +205,21 @@ class PPOClipAgent:
         print("=== Update ===")
         # Rewards-to-go
         rewards = torch.tensor([t[2] for t in self._trajectories])
-
-        # Extract spatial and global features
-        spatial_tensor, global_info = game_state_to_vector(game_state)
-
-        values = self._critic.forward(spatial_tensor, global_info)
         dones = torch.tensor([t[2] for t in self._trajectories])
 
-        # rewards_to_go = self.rewards_to_go(rewards, values, dones)
-
-        # Advantage
-        rewards_to_go, advantages = self.advantage(rewards, values, dones)
+        # Extract spatial and global features
+        # TODO: batch this
+        game_states = [t[0] for t in self._trajectories]
+        vectorized_game_states = game_state_to_vector(game_states)
+        values = self._critic.forward(vectorized_game_states[0], vectorized_game_states[1])
 
         print("\nrewards:", rewards)
         print("\nvalues:", values) 
         print("\ndones:", dones)
+
+        # Advantage
+        rewards_to_go, advantages = self.advantage(rewards, values, dones)
+
         print("\nrewards_to_go:", rewards_to_go)
         print("\nadvantages:", advantages)
 
@@ -270,7 +271,7 @@ class PPOClipAgent:
 
     def get_action(self, game_state, valid_actions):
         print("=== Getting Action ===")
-        spatial_tensor, global_info = game_state_to_vector(game_state)
+        spatial_tensor, global_info = game_state_to_vector([game_state])
         action_space_logits = self._actor.forward(spatial_tensor, global_info)
 
         # print(valid_actions)
