@@ -1,5 +1,5 @@
 import json
-import numpy as np
+import torch
 
 # Constants for mapping strings to integers
 TERRAIN_MAP = {
@@ -211,12 +211,13 @@ def game_state_to_vector(gs):
     board_size = len(gs['board']['terrains'])
     
     # Initialize arrays with appropriate shapes
-    terrain_array = np.zeros((board_size, board_size, 1), dtype=np.int32)
-    resource_array = np.full((board_size, board_size, 1), -1, dtype=np.int32)
-    building_array = np.full((board_size, board_size, 1), -1, dtype=np.int32)
-    unit_array = np.full((board_size, board_size, 13), -1, dtype=np.int32)  # -1 for no unit
-    city_array = np.full((board_size, board_size, 10), -1, dtype=np.int32)   # -1 for no city
-    trade_network = np.zeros((board_size, board_size, 1), dtype=np.int32)
+    terrain_array = torch.zeros((board_size, board_size, 1), dtype=torch.int32)
+    resource_array = torch.full((board_size, board_size, 1), -1, dtype=torch.int32)
+    building_array = torch.full((board_size, board_size, 1), -1, dtype=torch.int32)
+    unit_array = torch.full((board_size, board_size, 13), -1, dtype=torch.int32)  # -1 for no unit
+    city_array = torch.full((board_size, board_size, 10), -1, dtype=torch.int32)   # -1 for no city
+    trade_network = torch.zeros((board_size, board_size, 1), dtype=torch.int32)
+
 
     # Fill terrain array
     for y, row in enumerate(gs['board']['terrains']):
@@ -260,7 +261,7 @@ def game_state_to_vector(gs):
                     base_land_unit_int = UNIT_TYPE_MAP.get(base_land_unit_str, -1) if base_land_unit_str is not None else -1
                     
                     # print('unit info', unit, city_pos_x, city_pos_y, status_int, base_land_unit_str)
-                    unit_array[y, x] = [
+                    unit_array[y, x] = torch.tensor([
                         unit.get('ATK', -1),
                         unit.get('DEF', -1),
                         unit.get('MOV', -1),
@@ -274,7 +275,7 @@ def game_state_to_vector(gs):
                         status_int,
                         unit.get('tribeId', -1),
                         base_land_unit_int
-                    ]
+                    ], dtype=torch.int32)
 
     # Fill city array and tile ownership
     for y, row in enumerate(gs['board']['tileCityId']):
@@ -287,7 +288,7 @@ def game_state_to_vector(gs):
                     city_pos_x = city.get('position', {}).get('x', -1)
                     city_pos_y = city.get('position', {}).get('y', -1)
 
-                    city_array[y, x] = [
+                    city_array[y, x] = torch.tensor([
                         city.get('level', -1),
                         city.get('population', -1),
                         city.get('population_need', -1),
@@ -298,27 +299,27 @@ def game_state_to_vector(gs):
                         city.get('tribeId', -1),
                         city_pos_x,
                         city_pos_y
-                    ]
+                    ], dtype=torch.int32)
 
     # Fill trade network
     if 'tradeNetwork' in gs['board']:
-        trade_network = np.array(gs['board']['tradeNetwork']['networkTiles']).reshape(board_size, board_size, 1)
+        trade_network = torch.tensor(gs['board']['tradeNetwork']['networkTiles']).reshape(board_size, board_size, 1)
 
     # Combine all arrays into final tensor
-    spatial_tensor = np.concatenate([
+    spatial_tensor = torch.cat([
         terrain_array,
         resource_array,
         building_array,
         unit_array,
         city_array,
         trade_network
-    ], axis=2)
+    ], dim=2)
 
     # Get global information
-    global_info = np.array([
+    global_info = torch.tensor([
         gs['board']['activeTribeID'],
         gs['board']['diplomacy']['allegianceStatus'][0][1 - gs['board']['activeTribeID']]  # Assuming 2-player game
-    ])
+    ], dtype=torch.float32)
 
     return spatial_tensor, global_info
 
