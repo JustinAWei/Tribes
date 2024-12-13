@@ -193,7 +193,9 @@ class PPOClipAgent:
             last_advantage = advantage
             last_value = values[t]
             
-        return advantages
+        # Compute the returns as the sum of the advantages and the values since A = Q - V (to be used as target for the critic)
+        returns = advantages + values
+        return returns, advantages
 
     def _update(self, game_state, valid_actions, old_log_probs):
         # Rewards-to-go
@@ -205,10 +207,10 @@ class PPOClipAgent:
         values = self._critic.forward(spatial_tensor, global_info)
         dones = torch.tensor([t[2] for t in self._trajectories])
 
-        rewards_to_go = self.rewards_to_go(rewards, values, dones)
+        # rewards_to_go = self.rewards_to_go(rewards, values, dones)
 
         # Advantage
-        advantages = self.advantage(rewards, values, dones)
+        rewards_to_go, advantages = self.advantage(rewards, values, dones)
 
         print("\nrewards:", rewards)
         print("\nvalues:", values) 
