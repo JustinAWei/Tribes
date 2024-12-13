@@ -26,17 +26,6 @@ async def receive_data(request: Request):
         gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']
         # pprint(gs)
 
-        # Save game state
-        # if gs["tick"] % 40 == 0:
-        #     # Create timestamped filename
-        #     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        #     filename = f'game_state_{timestamp}.json'
-        #     
-        #     # Save game state to file
-        #     with open(filename, 'w') as f:
-        #         json.dump(gs, f, indent=4)
-        #     print(f"Game state saved to '{filename}'")
-
         BOARD_LEN = len(gs['board']['terrains'])
         BOARD_SIZE = BOARD_LEN ** 2
         

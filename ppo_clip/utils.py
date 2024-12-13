@@ -121,4 +121,23 @@ TECH_TYPES = {
 }
 
 
+def game_over(gs):
+    return gs['gameIsOver']
+
+def reward(gs):
+    # which tribe is active?
+    active_tribe_id = gs['board']['activeTribeID']
+
+    # which tribe is the winner?
+    tribes = gs['board']['tribes']
+    for tribe in tribes:
+        print("tribe", tribe)
+        if tribe['tribeId'] == active_tribe_id: 
+            print("active_tribe_id", active_tribe_id)
+            print("winner", tribe['winner'])
+            if tribe['winner'] == "WIN":
+                return 1
+    return 0
+
+
 MASK = 0
