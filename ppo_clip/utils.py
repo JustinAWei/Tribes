@@ -1,3 +1,5 @@
+BOARD_LEN = 11
+
 
 def get_actor_x_y(actor_id, gs):
     # in board -> gameActors
@@ -126,7 +128,7 @@ MAX_EXTRA_VARS = max(len(ACTION_TYPES.values()), len(BONUS_TYPES.values()), len(
 def game_over(gs):
     return gs['gameIsOver']
 
-def reward(gs):
+def reward_fn(gs):
     # which tribe is active?
     active_tribe_id = gs['board']['activeTribeID']
 

@@ -7,8 +7,13 @@ import json
 from pprint import pprint
 from datetime import datetime
 
-from utils import ACTION_CATEGORIES, ACTION_TYPES, TECH_TYPES, BUILDING_TYPES, UNIT_TYPES, MASK, get_actor_x_y, BONUS_TYPES
-from model import ppo_clip
+from utils import ACTION_CATEGORIES, ACTION_TYPES, TECH_TYPES, BUILDING_TYPES, UNIT_TYPES, MASK, get_actor_x_y, BONUS_TYPES, MAX_EXTRA_VARS
+from model import PPOClipAgent
+from utils import BOARD_LEN
+
+
+action_space_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, MAX_EXTRA_VARS)
+agent = PPOClipAgent(action_space_shape)
 
 # Create FastAPI app
 app = FastAPI()
@@ -26,12 +31,10 @@ async def receive_data(request: Request):
         gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']
         # pprint(gs)
 
-        BOARD_LEN = len(gs['board']['terrains'])
-        BOARD_SIZE = BOARD_LEN ** 2
+        # BOARD_LEN = len(gs['board']['terrains'])
+        # BOARD_SIZE = BOARD_LEN ** 2
         
         # Building types, unit types, tech types, etc.
-        MAX_EXTRA_VARS = 32
-        action_space_shape = (len(ACTION_CATEGORIES), max(ACTION_TYPES.values()) + 1, BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, MAX_EXTRA_VARS)
 
         # Allowed action types (both numbers and strings)
         allowed_action_types = list(ACTION_TYPES.keys()) + list(ACTION_TYPES.values())
@@ -125,7 +128,8 @@ async def receive_data(request: Request):
 
                 valid_actions.append([ACTION_CATEGORIES["UNIT"], ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
 
-        action = ppo_clip(gs, valid_actions, action_space_shape)
+        action = agent.run(0, gs, valid_actions)
+        print("Action: ", action)
 
         return {
             "status": 200, 
