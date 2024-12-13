@@ -106,9 +106,10 @@ class PPOClipAgent:
         self.actor_optimizer = optim.Adam(self._actor.parameters(), lr=lr)
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
-        self._num_trajectories = 100
+        self._batch_size = 16
         self._epochs = 10
         self._trajectories = []
+        self._counter = 0
 
     def to(self, device):
         """
@@ -121,18 +122,17 @@ class PPOClipAgent:
         
     def run(self, id, game_state, valid_actions):
         old_log_probs = torch.randn(self.output_size)
+        self._counter += 1
 
-        for i in range(self._epochs * self._num_trajectories):
-            
-            # Collect trajectory
-            action = self.get_action(game_state, valid_actions)
-            self._trajectories.append((game_state, action, reward_fn(game_state)))
+        # Collect trajectory
+        action = self.get_action(game_state, valid_actions)
+        self._trajectories.append((game_state, action, reward_fn(game_state)))
+        
+        if self._counter % self._batch_size == 0:
+            new_log_probs = self._update(game_state, valid_actions, old_log_probs)
+            old_log_probs = new_log_probs
 
-            yield action
-            
-            # if i % self._num_trajectories == 0:
-            #     new_log_probs = self._update(game_state, valid_actions, old_log_probs)
-            #     old_log_probs = new_log_probs
+        return action
 
     def rewards_to_go(self, rewards, dones, gamma=0.99):
         """
@@ -210,37 +210,53 @@ class PPOClipAgent:
         # Advantage
         advantages = self.advantage(rewards, values, dones)
 
+        print("\nrewards:", rewards)
+        print("\nvalues:", values) 
+        print("\ndones:", dones)
+        print("\nrewards_to_go:", rewards_to_go)
+        print("\nadvantages:", advantages)
+
         # Extract actions from trajectories
         actions = torch.tensor([t[1] for t in self._trajectories])
 
-        # Actor: SGD with Adam optimizer
-        # Maximize PPO-clip objective
+        print("\n=== Actor Update ===")
+        print("1. Zeroing actor gradients...")
         self.actor_optimizer.zero_grad()
 
+        print("2. Getting new action logits from actor network...")
         new_action_space_logits = self._actor.forward(spatial_tensor, global_info)
 
+        print("3. Creating and applying action mask...")
         mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
         masked_action_space_logits = new_action_space_logits * mask
 
+        print("4. Computing action probabilities...")
         # regular softmax
         masked_action_space_probs = torch.softmax(masked_action_space_logits, dim=len(self.output_size) - 1)
 
+        print("5. Creating probability distribution...")
         dist = Categorical(masked_action_space_probs)
         new_log_probs = dist.log_prob(actions)
         entropy = dist.entropy()    
 
+        print("6. Computing PPO ratios and losses...")
         ratio = torch.exp(new_log_probs - old_log_probs.detach())
         surrogate1 = ratio * advantages
         surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages
         actor_loss = -torch.min(surrogate1, surrogate2).mean()
 
+        print("7. Performing actor backprop...")
         actor_loss.backward()
         self.actor_optimizer.step()
 
-        # Critic: SGD with Adam optimizer
-        # Minimize MSE loss
+        print("\n=== Critic Update ===") 
+        print("1. Zeroing critic gradients...")
         self.critic_optimizer.zero_grad()
+        
+        print("2. Computing critic loss...")
         loss = MSELoss(rewards_to_go, values)
+        
+        print("3. Performing critic backprop...")
         loss.backward()
         self.critic_optimizer.step()
 
@@ -250,14 +266,14 @@ class PPOClipAgent:
         spatial_tensor, global_info = game_state_to_vector(game_state)
         action_space_logits = self._actor.forward(spatial_tensor, global_info)
 
-        print(valid_actions)
+        # print(valid_actions)
         mask = create_multidimensional_mask(torch.tensor(valid_actions), self.output_size)
-        print("Mask shape:", mask.shape)
+        # print("Mask shape:", mask.shape)
 
         # use the mask to filter the valid actions by
         masked_action_space_logits = action_space_logits * mask
         # count nonzero elements
-        print("Number of nonzero elements:", torch.count_nonzero(masked_action_space_logits), "Number of 1s in the mask:", torch.sum(mask))
+        # print("Number of nonzero elements:", torch.count_nonzero(masked_action_space_logits), "Number of 1s in the mask:", torch.sum(mask))
 
         # softmax and choose the action
         masked_action_space_probs = torch.softmax(masked_action_space_logits, dim=len(self.output_size) - 1)
@@ -270,7 +286,6 @@ class PPOClipAgent:
         # this is a np arr of np.int64, i want to convert it to a list of ints
         action = [int(i) for i in action]
 
-        print("Action: ", action)
         return action
 
 def create_multidimensional_mask(coordinates, shape):

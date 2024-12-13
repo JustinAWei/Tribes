@@ -135,10 +135,10 @@ def reward_fn(gs):
     # which tribe is the winner?
     tribes = gs['board']['tribes']
     for tribe in tribes:
-        print("tribe", tribe)
+        # print("tribe", tribe)
         if tribe['tribeId'] == active_tribe_id: 
-            print("active_tribe_id", active_tribe_id)
-            print("winner", tribe['winner'])
+            # print("active_tribe_id", active_tribe_id)
+            # print("winner", tribe['winner'])
             if tribe['winner'] == "WIN":
                 return 1
     return 0
