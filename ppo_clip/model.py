@@ -109,9 +109,9 @@ class PPOClipAgent:
         self.actor_optimizer = optim.Adam(self._actor.parameters(), lr=lr)
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
-        self._batch_size = 1
+        self._batch_size = 1000
         self._epochs = 10
-        self._trajectories = []
+        self._trajectories = torch.tensor([])
         self._counter = 0
 
     def to(self, device):
@@ -129,14 +129,27 @@ class PPOClipAgent:
         self._counter += 1
 
         # Collect trajectory
-        action = self.get_action(game_state, valid_actions)
-        self._trajectories.append((game_state, action, reward_fn(game_state)))
+        actions, rewards, probs, mask = self.get_action([game_state], [valid_actions])
+        self._trajectories = torch.stack((
+            torch.tensor(game_state), 
+            torch.tensor(actions),
+            torch.tensor(rewards),
+            probs,
+            mask
+        ), dim=0)
+
+        print("\n=== Trajectory Shapes ===")
+        print("game_state shape:", self._trajectories[0].shape)
+        print("actions shape:", self._trajectories[1].shape) 
+        print("rewards shape:", self._trajectories[2].shape)
+        print("probs shape:", self._trajectories[3].shape)
+        print("mask shape:", self._trajectories[4].shape)
         
         if self._counter % self._batch_size == 0:
             new_log_probs = self._update(game_state, valid_actions, old_log_probs)
             old_log_probs = new_log_probs
 
-        return action
+        return actions
 
     def advantage(self, rewards, values, dones, gamma=0.99, lambda_=0.95):
         """
@@ -251,6 +264,10 @@ class PPOClipAgent:
         
         print("5. Creating probability distribution...")
         dist = Categorical(masked_action_space_probs)
+
+        actions = torch.tensor([t[1] for t in self._trajectories])
+        
+        
         new_log_probs = dist.log_prob(actions.view(-1))
         entropy = dist.entropy()  
 
@@ -274,6 +291,11 @@ class PPOClipAgent:
         actor_loss.backward()
         self.actor_optimizer.step()
 
+
+
+
+
+
         print("\n=== Critic Update ===") 
         print("1. Zeroing critic gradients...")
         self.critic_optimizer.zero_grad()
@@ -290,42 +312,53 @@ class PPOClipAgent:
     def get_action(self, game_states: list, valid_actions: list[list[int]]):
 
         # game_states = [batch_size, 1]
-        # valid action = [batch_size, 6]
+        # valid action = [batch_size, N, 6]
         batch_size = len(game_states)
-
         assert len(valid_actions) == batch_size
 
         # Get state features
         [spatial_tensor, global_info] = game_state_to_vector(game_states) # -> (batch_size, board_size, board_size, 27), (batch_size, 2)
+        print("spatial_tensor shape:", spatial_tensor.shape)
+        print("global_info shape:", global_info.shape)
         
         # Get action logits from actor network
         logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
+        print("logits shape:", logits.shape)
         
         # Create mask tensor of -inf everywhere
-        mask = torch.full((batch_size, self.output_size), float('-inf')) # -> (batch_size, action_space_size)
-        
+        mask = torch.full((batch_size, *self.output_size), float('-inf')) # -> (batch_size, action_space_size)
+        print("mask shape:", mask.shape)
         # Convert valid actions to tensor indices and set to 0 in mask
         # Convert valid actions to indices in flattened action space
         for batch_idx, actions in enumerate(valid_actions):
             # Each action is [action_type, x1, y1, x2, y2, extra]
             for action in actions:
-                # Convert 6D action to flattened index
-                idx = np.ravel_multi_index(action, self.output_size)
+                print("action:", action)
                 # Set corresponding position in mask to 0 to allow this action
-                mask[batch_idx, idx] = 0
+                mask[batch_idx][action[0]][action[1]][action[2]][action[3]][action[4]][action[5]] = 0
         
         # Add mask to logits to keep valid actions and mask out invalid ones
+
+        print("\nSample of logits:")
+        print(logits[0, 0:2, 0:2, 0:2, 0:2, 0:2, 0:2])  # Print small subset of first batch item
+        
+        print("\nSample of mask:")
+        print(mask[0, 0:2, 0:2, 0:2, 0:2, 0:2, 0:2])  # Print same subset of mask for comparison
+
         masked_logits = logits.add(mask)  # Using in-place batch addition
+        print("masked_logits shape:", masked_logits.shape)
 
         # Get action probabilities and select action
-        probs = torch.softmax(masked_logits, dim=1)  # Keep batch dimension
+        probs = torch.softmax(masked_logits.flatten(start_dim=1), dim=0)  # Keep batch dimension
+        print("probs shape:", probs.shape)
         dist = Categorical(probs)
         flat_indices = dist.sample()  # Will sample for each item in batch
-        
+        print("flat_indices shape:", flat_indices.shape)
         # turn into multi-dimensional action
         actions = [int(i) for i in np.unravel_index(flat_indices.item(), self.output_size)]
+        print("actions shape:", len(actions))
 
         # compute rewards
         rewards = [reward_fn(game_state) for game_state in game_states]
-        
+        print("rewards shape:", len(rewards))
         return actions, rewards, probs, mask

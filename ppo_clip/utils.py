@@ -98,7 +98,7 @@ def filter_actions(gs):
             valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
 
     # ensure its a tensor
-    valid_actions = torch.tensor(valid_actions)
+    return valid_actions
 
 
 def get_actor_x_y(actor_id, gs):
