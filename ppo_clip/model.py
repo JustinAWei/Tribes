@@ -138,31 +138,6 @@ class PPOClipAgent:
 
         return action
 
-    def rewards_to_go(self, rewards, dones, gamma=0.99):
-        """
-        Compute rewards-to-go for each timestep.
-        
-        Args:
-            rewards (torch.Tensor): Tensor of rewards for each timestep
-            values (torch.Tensor): Tensor of value estimates for each timestep
-            dones (torch.Tensor): Tensor of done flags for each timestep
-            gamma (float): Discount factor (default: 0.99)
-        
-        Returns:
-            torch.Tensor: Rewards-to-go for each timestep
-        """
-        rewards_to_go = torch.zeros_like(rewards)
-        running_sum = 0
-        
-        # Iterate backwards through the rewards
-        for t in reversed(range(len(rewards))):
-            if dones[t]:
-                running_sum = 0
-            running_sum = rewards[t] + gamma * running_sum
-            rewards_to_go[t] = running_sum
-            
-        return rewards_to_go
-
     def advantage(self, rewards, values, dones, gamma=0.99, lambda_=0.95):
         """
         Calculate advantage using Generalized Advantage Estimation (GAE)
@@ -223,6 +198,9 @@ class PPOClipAgent:
         print("\nrewards_to_go:", rewards_to_go)
         print("\nadvantages:", advantages)
 
+
+
+
         # Extract actions from trajectories
 #         actions = torch.tensor([t[1] for t in self._trajectories])
 # 
@@ -254,12 +232,17 @@ class PPOClipAgent:
         # TODO: this is not batched right now, only assuming single game
         print("valid_actions:", valid_actions)
         for action in valid_actions:
-            mask[0, action[0], action[1], action[2], action[3], action[4], action[5], action[6]] = 0.0  # Apply mask across the batch dimension
+            mask[0, action[0], action[1], action[2], action[3], action[4], action[5]] = 0.0  # Apply mask across the batch dimension
 
         # Add mask to logits to keep valid actions and mask out invalid ones
         masked_logits = new_action_space_logits + mask
 
         print("4. Computing action probabilities...")
+
+
+
+
+
 
         # Flatten logits for softmax
         # print dimensions of masked_action_space_logits
@@ -304,29 +287,45 @@ class PPOClipAgent:
 
         return new_log_probs
 
-    def get_action(self, game_state, valid_actions):
+    def get_action(self, game_states: list, valid_actions: list[list[int]]):
+
+        # game_states = [batch_size, 1]
+        # valid action = [batch_size, 6]
+        batch_size = len(game_states)
+
+        assert len(valid_actions) == batch_size
+
         # Get state features
-        [spatial_tensor, global_info] = game_state_to_vector([game_state])
+        [spatial_tensor, global_info] = game_state_to_vector(game_states) # -> (batch_size, board_size, board_size, 27), (batch_size, 2)
         
         # Get action logits from actor network
-        logits = self._actor.forward(spatial_tensor, global_info)
+        logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
         
         # Create mask tensor of -inf everywhere
-        mask = torch.full(self.output_size, float('-inf'))
+        mask = torch.full((batch_size, self.output_size), float('-inf')) # -> (batch_size, action_space_size)
         
-        # Set valid action coordinates to 0 in mask
-        for action in valid_actions:
-            mask[tuple(action)] = 0.0
-            
+        # Convert valid actions to tensor indices and set to 0 in mask
+        # Convert valid actions to indices in flattened action space
+        for batch_idx, actions in enumerate(valid_actions):
+            # Each action is [action_type, x1, y1, x2, y2, extra]
+            for action in actions:
+                # Convert 6D action to flattened index
+                idx = np.ravel_multi_index(action, self.output_size)
+                # Set corresponding position in mask to 0 to allow this action
+                mask[batch_idx, idx] = 0
+        
         # Add mask to logits to keep valid actions and mask out invalid ones
-        masked_logits = logits + mask
+        masked_logits = logits.add(mask)  # Using in-place batch addition
 
         # Get action probabilities and select action
-        probs = torch.softmax(masked_logits.flatten(), dim=0)
+        probs = torch.softmax(masked_logits, dim=1)  # Keep batch dimension
         dist = Categorical(probs)
-        flat_index = dist.sample()
+        flat_indices = dist.sample()  # Will sample for each item in batch
         
-        # Convert to multi-dimensional action
-        action = [int(i) for i in np.unravel_index(flat_index.item(), self.output_size)]
+        # turn into multi-dimensional action
+        actions = [int(i) for i in np.unravel_index(flat_indices.item(), self.output_size)]
+
+        # compute rewards
+        rewards = [reward_fn(game_state) for game_state in game_states]
         
-        return action
+        return actions, rewards, probs, mask
