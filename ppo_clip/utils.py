@@ -15,6 +15,8 @@ def get_actor_x_y(actor_id, gs):
 
     return x, y
 
+MAX_EXTRA_VARS = 32
+
 BONUS_TYPES = {
     "WORKSHOP": 0,
     "EXPLORER": 1,
