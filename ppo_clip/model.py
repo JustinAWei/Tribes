@@ -131,7 +131,6 @@ class PPOClipAgent:
         # Collect trajectory
         actions, rewards, probs, mask = self.get_action([game_state], [valid_actions])
         self._trajectories = torch.stack((
-            torch.tensor(game_state), 
             torch.tensor(actions),
             torch.tensor(rewards),
             probs,
@@ -259,6 +258,7 @@ class PPOClipAgent:
 
         # Flatten logits for softmax
         # print dimensions of masked_action_space_logits
+        print("old_log_probs shape:", old_log_probs.shape)
         masked_action_space_probs = torch.softmax(masked_logits.flatten(), dim=0)
         print("masked_action_space_probs:", masked_action_space_probs.shape)
         
