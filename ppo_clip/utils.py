@@ -15,7 +15,6 @@ def get_actor_x_y(actor_id, gs):
 
     return x, y
 
-MAX_EXTRA_VARS = 32
 
 BONUS_TYPES = {
     "WORKSHOP": 0,
@@ -122,6 +121,7 @@ TECH_TYPES = {
     "PHILOSOPHY": 23
 }
 
+MAX_EXTRA_VARS = max(len(ACTION_TYPES.values()), len(BONUS_TYPES.values()), len(TECH_TYPES.values()), len(BUILDING_TYPES.values()), len(UNIT_TYPES.values()))
 
 def game_over(gs):
     return gs['gameIsOver']

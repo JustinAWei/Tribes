@@ -6,6 +6,7 @@ from utils import MAX_EXTRA_VARS, ACTION_CATEGORIES, ACTION_TYPES
 from gymnasium.spaces import MultiDiscrete
 from vectorize_game_state import game_state_to_vector
 import requests
+from spinup import ppo_pytorch as ppo
 
 class Actions(Enum):
     right = 0
@@ -38,16 +39,16 @@ class TribesJavaClient:
 
 class TribesEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
-    tribes_client = TribesJavaClient()
+    _tribes_client = TribesJavaClient()
 
     _game_state = None
 
     def __init__(self, render_mode=None):
         # Parse game state
+        data = self._tribes_client.fetch_tribes_state()
         gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']
-        # pprint(gs)
-
         BOARD_LEN = len(gs['board']['terrains'])
+
         self.size = BOARD_LEN  # The size of the square grid
 
         # Observations are dictionaries with the agent's and the target's location.
@@ -55,7 +56,7 @@ class TribesEnv(gym.Env):
         # i.e. MultiDiscrete([size, size]).
         self.observation_space = spaces.Dict(
             {
-                "spatial_tensor": spaces.Box(0, size**2 - 1, shape=(size, size, 27), dtype=int),
+                "spatial_tensor": spaces.MultiDiscrete(shape=(size, size, 27)),
                 "global_info": spaces.Box(0, size**2 - 1, shape=(2,), dtype=int),
             }
         )
@@ -76,16 +77,6 @@ class TribesEnv(gym.Env):
         self.window = None
         self.clock = None
 
-    def get_game_state(self):
-        # Return network response to Java
-        # fetch..
-        def fetch_tribes_state():
-            pass
-
-        self._game_state = fetch_tribes_state()
-        self._vector_game_state, self._info = game_state_to_vector(self._game_state)
-
-
     def _get_obs(self):
         return {"spatial_tensor": self._game_state, "global_info": self._info}
 
@@ -99,7 +90,7 @@ class TribesEnv(gym.Env):
         super().reset(seed=seed)
 
         # Create a new game
-        self._game_state = self.tribes_client.reset_game()
+        self._game_state = self._tribes_client.reset_game()
 
         observation = self._get_obs()
         info = self._get_info()
@@ -108,7 +99,7 @@ class TribesEnv(gym.Env):
 
     def step(self, action):
         # Send action to Java
-        self._game_state = self.tribes_client.send_action(action)
+        self._game_state = self._tribes_client.send_action(action)
 
         terminated = game_over(self._game_state)
         reward = reward(self._game_state)
@@ -137,9 +128,7 @@ if __name__ == "__main__":
         entry_point=TribesEnv,
     )
 
-    env = gym.make("tribes/Tribes-v0")
-    env.reset()
-    env = gym.make("tribes/Tribes-v0", size=10)
-    env.reset()
+    env_fn = lambda: gym.make("tribes/Tribes-v0")
 
+    ppo(env_fn, ac_kwargs={}, seed=0, steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=0.0003, vf_lr=0.001, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000, target_kl=0.01, logger_kwargs={}, save_freq=10)
 
