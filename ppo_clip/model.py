@@ -83,13 +83,14 @@ class Critic(nn.Module):
     def forward(self, spatial, global_features):
         combined = self.feature_extractor(spatial, global_features)
         return self.value_head(combined)  # -> (batch, 1)
+
 class PPOClipAgent:
     def __init__(self, input_size, output_size):
         self.input_size = input_size
         self.output_size = output_size
 
-        self._actor = Actor(self.input_size, self.output_size)
-        self._critic = Critic(self.input_size)
+        self._actor = Actor(BOARD_LEN, self.output_size)
+        self._critic = Critic(BOARD_LEN)
 
         lr = 0.0001
 
