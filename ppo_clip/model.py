@@ -349,16 +349,18 @@ class PPOClipAgent:
         print("masked_logits shape:", masked_logits.shape)
 
         # Get action probabilities and select action
-        probs = torch.softmax(masked_logits.flatten(start_dim=1), dim=0)  # Keep batch dimension
+        probs = torch.softmax(masked_logits.flatten(start_dim=1), dim=1)  # Keep batch dimension
+        print("softmaxed probs shape:", probs.shape)
+
         print("probs shape:", probs.shape)
         dist = Categorical(probs)
         flat_indices = dist.sample()  # Will sample for each item in batch
         print("flat_indices shape:", flat_indices.shape)
         # turn into multi-dimensional action
-        actions = [int(i) for i in np.unravel_index(flat_indices.item(), self.output_size)]
-        print("actions shape:", len(actions))
+        actions = torch.tensor(np.unravel_index(flat_indices, self.output_size))
+        print("actions shape:", actions.shape)
 
         # compute rewards
-        rewards = [reward_fn(game_state) for game_state in game_states]
-        print("rewards shape:", len(rewards))
+        rewards = torch.tensor([reward_fn(game_state) for game_state in game_states])
+        print("rewards shape:", rewards.shape)
         return actions, rewards, probs, mask
