@@ -170,7 +170,7 @@ for action_type in ACTION_TYPES.keys():
 
     # self unit actions 
     # self: spawn, level_up, capture, recover, examine, make_veteran, upgrade_boat, upgrade_ship
-    if action_type == 'CAPTURE':
+    elif action_type == 'CAPTURE':
         action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
     elif action_type == 'RECOVER':
         action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
