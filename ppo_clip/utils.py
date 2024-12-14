@@ -259,9 +259,9 @@ def reward_fn(gs):
                 for tribe in ranking:
                     if tribe['id'] == active_tribe_id:
                         # Note: this should be between 0 and 1
-                        reward = (tribe['numTechsResearched'] + tribe['numCities'] + tribe['production'])
-                        while not reward < 1:
-                            reward = reward / 10
+                        # Max techs < 100, max num cities < board size ^ 2, max production < 1000
+                        max_intermediate_rewards = 100 + BOARD_LEN ** 2 + 1000
+                        reward = (tribe['numTechsResearched'] + tribe['numCities'] + tribe['production']) / max_intermediate_rewards
 
     print("reward", reward)
     return reward
