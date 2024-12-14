@@ -1,3 +1,4 @@
+import copy
 import torch
 import torch.nn as nn
 import numpy as np
@@ -133,7 +134,7 @@ class PPOClipAgent:
             "probs": [],
             "masks": []
         }
-        self._trajectories = self._base_trajectories.copy()
+        self._trajectories = copy.deepcopy(self._base_trajectories)
         self._counter = 0
 
     def to(self, device):
@@ -220,7 +221,7 @@ class PPOClipAgent:
         
         if self._counter % self._batch_size == 0:
             self._update()
-            self._trajectories = self._base_trajectories.copy()
+            self._trajectories = copy.deepcopy(self._base_trajectories)
 
         return actions[0].tolist()
 
