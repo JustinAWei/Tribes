@@ -1,0 +1,1 @@
+python3 -m uvicorn run:app --log-level critical --reload
