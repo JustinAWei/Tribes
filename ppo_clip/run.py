@@ -39,8 +39,8 @@ async def receive_data(request: Request):
 
         # convert last action to (action_type, extra_var)
         x2, y2, action_type, extra_var = index_to_action_tuple(action[-1])
-        print("Action Type: ", action_type)
-        print("Extra Var: ", extra_var)
+        # print("Action Type: ", action_type)
+        # print("Extra Var: ", extra_var)
 
         unpacked_action = [action[0], action[1], x2, y2, action_type, extra_var]
         print("Unpacked Action: ", unpacked_action)

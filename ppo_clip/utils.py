@@ -209,7 +209,6 @@ for action_type in ACTION_TYPES.keys():
         action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
 
 
-print(action_tuples)
 # be able to convert from (action_type, extra_var) to index
 def action_tuple_to_index(x,y, action_type, extra_var):
     return action_tuples.index((x,y, action_type, extra_var))

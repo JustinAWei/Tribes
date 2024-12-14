@@ -146,7 +146,7 @@ class PPOClipAgent:
         return self
         
     @timing_decorator
-    @profile
+    
     def run(self, id, game_state, valid_actions):
         self._counter += 1
 
@@ -265,7 +265,7 @@ class PPOClipAgent:
         return returns, advantages
 
     @timing_decorator
-    @profile
+    
     def _update(self):
         # print("=== Update ===")
 
@@ -349,7 +349,7 @@ class PPOClipAgent:
         return new_log_probs
 
     @timing_decorator
-    @profile
+    
     def get_action(self, spatial_tensor, global_info, masks):
         try:
             # Get action logits from actor network
