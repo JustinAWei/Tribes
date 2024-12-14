@@ -248,7 +248,7 @@ class PPOClipAgent:
             print("\ndones:", dones)
 
             # Advantage
-            rewards_to_go, advantages = self.advantage(rewards, values, dones)
+            rewards_to_go, advantages = self.advantage(rewards, values.detach(), dones.detach())
 
             print("\nrewards_to_go:", rewards_to_go)
             print("\nadvantages:", advantages)
