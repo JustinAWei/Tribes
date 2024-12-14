@@ -181,7 +181,7 @@ class PPOClipAgent:
         print("mask shape:", self._trajectories["masks"].shape)
         
         if self._counter % self._batch_size == 0:
-            new_log_probs = self._update(game_state, valid_actions, old_log_probs)
+            new_log_probs = self._update(spatial_tensor, global_info, masks, old_log_probs)
             old_log_probs = new_log_probs
 
         return actions
@@ -225,16 +225,13 @@ class PPOClipAgent:
         returns = advantages + values
         return returns, advantages
 
-    def _update(self, game_state, valid_actions, old_log_probs):
+    def _update(self, spatial_tensor, global_info, masks, old_log_probs):
         print("=== Update ===")
-        # Rewards-to-go
-        rewards = torch.tensor([t[2] for t in self._trajectories])
-        dones = torch.tensor([t[2] for t in self._trajectories])
+        # Get rewards and dones from trajectories
+        rewards = self._trajectories["rewards"]
+        dones = self._trajectories["masks"]
 
-        # Extract spatial and global features
-        game_states = [t[0] for t in self._trajectories]
-        spatial_tensors, global_infos = game_state_to_vector(game_states) # -> (batch_size, board_size, board_size, 27), (batch_size, 2)
-        values = self._critic.forward(spatial_tensors, global_infos)
+        values = self._critic.forward(spatial_tensor, global_info)
 
         print("\nrewards:", rewards)
         print("\nvalues:", values) 
@@ -247,65 +244,20 @@ class PPOClipAgent:
         print("\nadvantages:", advantages)
 
 
-
-
-        # Extract actions from trajectories
-#         actions = torch.tensor([t[1] for t in self._trajectories])
-# 
-#         # Convert the multi-dimensional action index to a flat index
-#         flat_action_index = np.ravel_multi_index(action, self.output_size)
-# 
-#         # Convert to a tensor
-#         action_tensor = torch.tensor([flat_action_index], dtype=torch.long)
-
         print("\n=== Actor Update ===")
-        print("1. Zeroing actor gradients...")
         self.actor_optimizer.zero_grad()
 
-        print("2. Getting new action logits from actor network...")
-        new_action_space_logits = self._actor.forward(spatial_tensors, global_infos)
-
-        print("3. Creating and applying action mask...")
-        # Create mask tensor of -inf everywhere
-        mask = torch.full(self.output_size, float('-inf'))
-
-        # Expand mask to match the batch dimension of logits
-        mask = mask.unsqueeze(0)
-
-        # Debug: Print the shape of logits and mask
-        print("Logits shape:", new_action_space_logits.shape)
-        print("Mask shape:", mask.shape)
-
-        # Set valid action coordinates to 0 in mask
-        # TODO: this is not batched right now, only assuming single game
-        print("valid_actions:", valid_actions)
-        for action in valid_actions:
-            mask[0, action[0], action[1], action[2], action[3], action[4], action[5]] = 0.0  # Apply mask across the batch dimension
-
-        # Add mask to logits to keep valid actions and mask out invalid ones
-        masked_logits = new_action_space_logits + mask
 
         print("4. Computing action probabilities...")
 
-
-
-
-
+        probs = self._trajectories["probs"]
+        actions = self._trajectories["actions"]
 
         # Flatten logits for softmax
-        # print dimensions of masked_action_space_logits
         print("old_log_probs shape:", old_log_probs.shape)
-        masked_action_space_probs = torch.softmax(masked_logits.flatten(), dim=0)
-        print("masked_action_space_probs:", masked_action_space_probs.shape)
-        
-        print("5. Creating probability distribution...")
-        dist = Categorical(masked_action_space_probs)
 
-        actions = torch.tensor([t[1] for t in self._trajectories])
-        
-        
-        new_log_probs = dist.log_prob(actions.view(-1))
-        entropy = dist.entropy()  
+        new_log_probs = probs.log_prob(actions.view(-1))
+        entropy = probs.entropy()  
 
         print("6. Computing PPO ratios and losses...") 
         # Ensure old_log_probs and new_log_probs have the same shape as advantages
@@ -323,14 +275,16 @@ class PPOClipAgent:
         surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages.view(-1)
         actor_loss = -torch.min(surrogate1, surrogate2).mean()
 
+
+
+
+
+
+
+
         print("7. Performing actor backprop...")
         actor_loss.backward()
         self.actor_optimizer.step()
-
-
-
-
-
 
         print("\n=== Critic Update ===") 
         print("1. Zeroing critic gradients...")
@@ -344,7 +298,6 @@ class PPOClipAgent:
         self.critic_optimizer.step()
 
         return new_log_probs
-
     def get_action(self, spatial_tensor, global_info, masks):
 
         # Get action logits from actor network
