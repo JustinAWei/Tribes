@@ -38,7 +38,7 @@ UNIT_TYPE_MAP = {
 }
 
 @timing_decorator
-def game_state_to_vector(gs_list):
+def game_state_to_vector(gs_list, device):
     """
     Vectorize a batch of game states into tensors.
     
@@ -57,18 +57,18 @@ def game_state_to_vector(gs_list):
     board_size = len(gs_list[0]['board']['terrains'])
     
     # Initialize batch tensors
-    spatial_tensors = torch.zeros((batch_size, board_size, board_size, 27), dtype=torch.float32)
-    global_infos = torch.zeros((batch_size, 2), dtype=torch.float32)
+    spatial_tensors = torch.zeros((batch_size, board_size, board_size, 27), dtype=torch.float32).to(device)
+    global_infos = torch.zeros((batch_size, 2), dtype=torch.float32).to(device)
     
     # Process each game state
     for i, gs in enumerate(gs_list):
-        spatial_tensor, global_info = _process_single_game_state(gs)
+        spatial_tensor, global_info = _process_single_game_state(gs, device)
         spatial_tensors[i] = spatial_tensor
         global_infos[i] = global_info
         
     return spatial_tensors, global_infos
 
-def _process_single_game_state(gs):
+def _process_single_game_state(gs, device):
     """
     Vectorize the game state into a numpy array. Below is the structure of the game state (and below that is the vectorization of the relevant features since not all features are relevant to the game for now).
 
@@ -242,12 +242,12 @@ def _process_single_game_state(gs):
     board_size = len(gs['board']['terrains'])
     
     # Initialize arrays with appropriate shapes
-    terrain_array = torch.zeros((board_size, board_size, 1), dtype=torch.int32)
-    resource_array = torch.full((board_size, board_size, 1), -1, dtype=torch.int32)
-    building_array = torch.full((board_size, board_size, 1), -1, dtype=torch.int32)
-    unit_array = torch.full((board_size, board_size, 13), -1, dtype=torch.int32)  # -1 for no unit
-    city_array = torch.full((board_size, board_size, 10), -1, dtype=torch.int32)   # -1 for no city
-    trade_network = torch.zeros((board_size, board_size, 1), dtype=torch.int32)
+    terrain_array = torch.zeros((board_size, board_size, 1), dtype=torch.int32).to(device)
+    resource_array = torch.full((board_size, board_size, 1), -1, dtype=torch.int32).to(device)
+    building_array = torch.full((board_size, board_size, 1), -1, dtype=torch.int32).to(device)
+    unit_array = torch.full((board_size, board_size, 13), -1, dtype=torch.int32).to(device)  # -1 for no unit
+    city_array = torch.full((board_size, board_size, 10), -1, dtype=torch.int32).to(device)   # -1 for no city
+    trade_network = torch.zeros((board_size, board_size, 1), dtype=torch.int32).to(device)
 
 
     # Fill terrain array
@@ -330,11 +330,11 @@ def _process_single_game_state(gs):
                         city.get('tribeId', -1),
                         city_pos_x,
                         city_pos_y
-                    ], dtype=torch.int32)
+                    ], dtype=torch.int32).to(device)
 
     # Fill trade network
     if 'tradeNetwork' in gs['board']:
-        trade_network = torch.tensor(gs['board']['tradeNetwork']['networkTiles']).reshape(board_size, board_size, 1)
+        trade_network = torch.tensor(gs['board']['tradeNetwork']['networkTiles']).reshape(board_size, board_size, 1).to(device)
 
     # Combine all arrays into final tensor
     spatial_tensor = torch.cat([
@@ -344,25 +344,27 @@ def _process_single_game_state(gs):
         unit_array,
         city_array,
         trade_network
-    ], dim=2).float()
+    ], dim=2).float().to(device)
 
     # Get global information
     global_info = torch.tensor([
         gs['board']['activeTribeID'],
         gs['board']['diplomacy']['allegianceStatus'][0][1 - gs['board']['activeTribeID']]  # Assuming 2-player game
-    ], dtype=torch.float32)
+    ], dtype=torch.float32).to(device)
 
     return spatial_tensor, global_info
 
 
 # Testing the vectorization
 if __name__ == "__main__":
+    DEVICE = 'mps' if torch.backends.mps.is_available() else 'cpu'
+
     # Load the sample game state
     with open('ppo_clip/sample_game_states/game_state_20241212_122822.json', 'r') as f:
         game_state = json.load(f)
 
     # Convert game state to vector
-    spatial_tensor, global_info = game_state_to_vector(game_state)
+    spatial_tensor, global_info = game_state_to_vector(game_state, device)
 
     # Print some basic information about the outputs
     print(f"Spatial tensor shape: {spatial_tensor.shape}")  # Should be (11, 11, 27)

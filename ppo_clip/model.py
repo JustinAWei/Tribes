@@ -11,7 +11,15 @@ from torch import optim
 import math
 from vectorize_game_state import game_state_to_vector
 from torch.distributions import Categorical
-from utils import timing_decorator
+from utils import timing_decorator, serialize_trajectories
+from modal_functions.update import remote_update
+import requests
+import modal
+
+# Endpoint for the update function
+url = "https://kev2010--ppo-clip-update-trigger-update.modal.run"
+
+DEVICE = 'mps' if torch.backends.mps.is_available() else 'cpu'
 
 # To reduce duplicate code, this is used for both the actor and the critic
 # NOTE: we are not batching the input for now
@@ -55,6 +63,7 @@ class FeatureExtractor(nn.Module):
 class Actor(nn.Module):
     def __init__(self, board_size, output_size):
         super(Actor, self).__init__()
+        self.device = DEVICE
         self.feature_extractor = FeatureExtractor()
         self.output_size = output_size
         
@@ -72,6 +81,10 @@ class Actor(nn.Module):
 
     @timing_decorator
     def forward(self, spatial, global_features):
+        # Ensure inputs are on GPU
+        spatial = spatial.to(self.device)
+        global_features = global_features.to(self.device)
+
         # print("=== Actor Forward ===")
         combined = self.feature_extractor(spatial, global_features)
         output = self.policy_head(combined)
@@ -81,6 +94,7 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     def __init__(self, board_size):
         super(Critic, self).__init__()
+        self.device = DEVICE
         self.feature_extractor = FeatureExtractor()
         
         spatial_flat_size = 32 * board_size * board_size
@@ -96,18 +110,24 @@ class Critic(nn.Module):
 
     @timing_decorator
     def forward(self, spatial, global_features):
+        # Ensure inputs are on GPU
+        spatial = spatial.to(self.device)
+        global_features = global_features.to(self.device)
+        
         # print("=== Critic Forward ===")
         combined = self.feature_extractor(spatial, global_features)
         return self.value_head(combined)  # Output should be (batch_size, 1)
 
 class PPOClipAgent:
     def __init__(self, input_size, output_size):
+        self.device = DEVICE
+        print(f"Using device: {self.device}")
         print("Initializing PPOClipAgent", output_size)
         self.input_size = input_size
         self.output_size = output_size
 
-        self._actor = Actor(BOARD_LEN, self.output_size)
-        self._critic = Critic(BOARD_LEN)
+        self._actor = Actor(BOARD_LEN, self.output_size).to(self.device)
+        self._critic = Critic(BOARD_LEN).to(self.device).to(self.device)
 
         lr = 0.0001
 
@@ -136,18 +156,9 @@ class PPOClipAgent:
         }
         self._trajectories = copy.deepcopy(self._base_trajectories)
         self._counter = 0
-
-    def to(self, device):
-        """
-        Move the model to the specified device.
-        """
-        self._actor = self._actor.to(device)
-        self._critic = self._critic.to(device)
-        self.device = device
-        return self
         
     @timing_decorator
-    
+    # @profile
     def run(self, id, game_state, valid_actions):
         self._counter += 1
 
@@ -155,7 +166,9 @@ class PPOClipAgent:
         # valid action = [batch_size, N, 6]
 
         # Get state features
-        [spatial_tensor, global_info] = game_state_to_vector([game_state]) # -> (batch_size, board_size, board_size, 27), (batch_size, 2)
+        [spatial_tensor, global_info] = game_state_to_vector([game_state], self.device) # -> (batch_size, board_size, board_size, 27), (batch_size, 2)
+        spatial_tensor = spatial_tensor.to(self.device)
+        global_info = global_info.to(self.device)
 
         # print("spatial_tensor shape:", spatial_tensor.shape)
         # print("global_info shape:", global_info.shape)
@@ -163,7 +176,7 @@ class PPOClipAgent:
         batch_size = spatial_tensor.shape[0]
 
         # Create mask tensor of -inf everywhere
-        masks = torch.full((batch_size, *self.output_size), float('-inf')) # -> (batch_size, action_space_size)
+        masks = torch.full((batch_size, *self.output_size), float('-inf')).to(self.device) # -> (batch_size, action_space_size)
         # print("mask shape:", masks.shape)
         # Convert valid actions to tensor indices and set to 0 in mask
         # Convert valid actions to indices in flattened action space
@@ -175,7 +188,7 @@ class PPOClipAgent:
                 masks[batch_idx][action[0]][action[1]][action[2]] = 0
 
         # compute rewards
-        rewards = torch.tensor([[reward_fn(game_state) for game_state in [game_state]]])
+        rewards = torch.tensor([[reward_fn(game_state) for game_state in [game_state]]]).to(self.device)
         # print("rewards shape:", rewards.shape)
 
         # Collect trajectory
@@ -266,12 +279,33 @@ class PPOClipAgent:
         return returns, advantages
 
     @timing_decorator
-    
+    # @profile
     def _update(self):
+#         remote_update = modal.Function.lookup("ppo_clip_update", "remote_update")
+# 
+#         # Call the remote function asynchronously
+#         return await remote_update.remote(
+#             serialized_trajectories=serialize_trajectories(self._trajectories),
+#             output_size=self.output_size,
+#             epochs=self._epochs,
+#             epsilon=self.epsilon,
+#             actor_optimizer=self.actor_optimizer.state_dict(),
+#             critic_optimizer=self.critic_optimizer.state_dict(),
+#             critic=self._critic.state_dict(),
+#             advantage=self.advantage,
+#             get_action=self.get_action
+#         )
+    
         # print("=== Update ===")
 
-        probs = torch.cat(self._trajectories["probs"], dim=0)
-        actions = torch.cat(self._trajectories["actions"], dim=0)
+                # Move tensors to GPU
+        probs = torch.cat(self._trajectories["probs"], dim=0).to(self.device).float()
+        actions = torch.cat(self._trajectories["actions"], dim=0).to(self.device).float()
+        rewards = torch.cat(self._trajectories["rewards"], dim=0).to(self.device).float()
+        dones = (rewards != 0).float().to(self.device)
+        spatial_tensor = torch.cat(self._trajectories["spatial_tensor"], dim=0).to(self.device).float()
+        global_info = torch.cat(self._trajectories["global_info"], dim=0).to(self.device).float()
+        masks = torch.cat(self._trajectories["masks"], dim=0).to(self.device).float()
 
         # print("actions shape:", actions.shape)
         # print("probs shape:", probs.shape)
@@ -280,20 +314,21 @@ class PPOClipAgent:
 
         # print("dist:", dist)
 
-        # translate actions to flat indices using ravel_multi_index
-        flat_actions = np.ravel_multi_index(tuple(actions.T), self.output_size)
-        flat_actions = torch.tensor(flat_actions)
+        # # translate actions to flat indices using ravel_multi_index
+        # flat_actions = np.ravel_multi_index(tuple(actions.T), self.output_size)
+        # flat_actions = torch.tensor(flat_actions, device=self.device)
+        # Replace np.ravel_multi_index with PyTorch operations
+        multipliers = torch.tensor([
+            np.prod(self.output_size[i+1:]) 
+            for i in range(len(self.output_size))
+        ], device=self.device, dtype=torch.float32)
+
+        flat_actions = (actions.float() * multipliers).sum(dim=1)
         old_log_probs = dist.log_prob(flat_actions)
         # print("old_log_probs shape:", old_log_probs.shape)
 
         for i in range(self._epochs):
             # print("=== Epoch", i, "===")
-            # Get rewards and dones from trajectories
-            rewards = torch.cat(self._trajectories["rewards"], dim=0)
-            dones = ((rewards == 1) | (rewards == -1)).float()
-            spatial_tensor = torch.cat(self._trajectories["spatial_tensor"], dim=0)
-            global_info = torch.cat(self._trajectories["global_info"], dim=0)
-            masks = torch.cat(self._trajectories["masks"], dim=0)
 
             values = self._critic.forward(spatial_tensor, global_info)
 
@@ -319,8 +354,15 @@ class PPOClipAgent:
             # print("old_log_probs shape:", old_log_probs.shape)
 
             dist = Categorical(new_probs)
-            flat_actions = np.ravel_multi_index(tuple(actions.T), self.output_size)
-            flat_actions = torch.tensor(flat_actions)
+            # Replace np.ravel_multi_index with PyTorch operations
+            multipliers = torch.tensor([
+                np.prod(self.output_size[i+1:]) 
+                for i in range(len(self.output_size))
+            ], device=self.device, dtype=torch.float32)
+
+            flat_actions = (actions * multipliers).sum(dim=1)
+            # flat_actions = np.ravel_multi_index(tuple(actions.T), self.output_size)
+            # flat_actions = torch.tensor(flat_actions).to(self.device)
             new_log_probs = dist.log_prob(flat_actions)
 
             # entropy = probs.entropy()  
@@ -350,9 +392,14 @@ class PPOClipAgent:
         return new_log_probs
 
     @timing_decorator
-    
+    # @profile
     def get_action(self, spatial_tensor, global_info, masks):
         try:
+            # Ensure inputs are on GPU
+            spatial_tensor = spatial_tensor.to(self.device).float()
+            global_info = global_info.to(self.device).float()
+            masks = masks.to(self.device).float()
+
             # Get action logits from actor network
             logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
             # print("logits shape:", logits.shape)
@@ -371,16 +418,29 @@ class PPOClipAgent:
             # print("flat", flat_indices)
             # print("flat_indices shape:", flat_indices.shape)
 
-            # Convert flat indices [B, 1] to multi-dimensional indices using torch.unravel_index
-            actions = torch.stack(
-                torch.unravel_index(
-                    flat_indices,
-                    self._actor.output_size
-                ),
-                dim=1
-            )  # Shape: [B, num_dimensions]
+            # # Convert flat indices [B, 1] to multi-dimensional indices using torch.unravel_index
+            # actions = torch.stack(
+            #     torch.unravel_index(
+            #         flat_indices,
+            #         self._actor.output_size
+            #     ),
+            #     dim=1
+            # )  # Shape: [B, num_dimensions]
+            # Convert flat indices to multi-dimensional indices using pure PyTorch
+            multipliers = torch.tensor([
+                np.prod(self._actor.output_size[i+1:]) 
+                for i in range(len(self._actor.output_size))
+            ], device=self.device, dtype=torch.float32)
+            
+            actions = torch.zeros((flat_indices.size(0), len(self._actor.output_size)), 
+                                dtype=torch.long, device=self.device)
+            
+            remaining = flat_indices
+            for i, mult in enumerate(multipliers):
+                actions[:, i] = remaining // mult
+                remaining = remaining % mult
 
-            # print("actions shape:", actions.shape)
+                # print("actions shape:", actions.shape)
 
             return actions, probs
         except Exception as e:

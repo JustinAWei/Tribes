@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request
 import uvicorn
 import json
-import time
 from utils import filter_actions, action_tuples, index_to_action_tuple, ACTION_TYPES
+
 from model import PPOClipAgent
 from utils import BOARD_LEN
 from pprint import pprint

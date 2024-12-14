@@ -1,5 +1,5 @@
 import torch
-
+import joblib
 import time
 
 MASK = 0
@@ -363,3 +363,14 @@ def filter_actions(gs):
     # ensure its a tensor
     return valid_actions
 
+def serialize_trajectories(trajectories):
+    # Convert each tensor in the trajectories to a numpy array
+    numpy_trajectories = {
+        key: [tensor.detach().cpu().numpy() for tensor in tensors]
+        for key, tensors in trajectories.items()
+    }
+    
+    # Serialize the numpy arrays using joblib
+    serialized_data = joblib.dumps(numpy_trajectories, compress=('zlib', 3))
+    
+    return serialized_data
