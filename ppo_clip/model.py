@@ -112,7 +112,7 @@ class PPOClipAgent:
         self.epsilon = 0.2
         self._batch_size = 8
         self._epochs = 2
-        self._trajectories = {
+        self._base_trajectories = {
             "spatial_tensor": torch.empty((0, BOARD_LEN, BOARD_LEN, 27), dtype=torch.float),
             "global_info": torch.empty((0, 2), dtype=torch.float),
 
@@ -121,6 +121,7 @@ class PPOClipAgent:
             "probs": torch.empty((0, np.prod(self.output_size)), dtype=torch.float),  # [batch_size, flattened_action_space] from probs shape shown in get_action()
             "masks": torch.empty((0, *self.output_size), dtype=torch.float)  # [batch_size, *output_size] from mask shape: torch.Size([1, *output_size])
         }
+        self._trajectories = self._base_trajectories.copy()
         self._counter = 0
 
     def to(self, device):
@@ -190,6 +191,7 @@ class PPOClipAgent:
         
         if self._counter % self._batch_size == 0:
             self._update()
+            self._trajectories = self._base_trajectories.copy()
 
         return actions[0].tolist()
 
