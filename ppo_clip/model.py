@@ -109,7 +109,8 @@ class PPOClipAgent:
         self.actor_optimizer = optim.Adam(self._actor.parameters(), lr=lr)
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
-        self._batch_size = 1000
+        self.epsilon = 0.2
+        self._batch_size = 1
         self._epochs = 10
         self._trajectories = {
             # "observations": torch.empty((0, 1), dtype=torch.float),
@@ -231,9 +232,6 @@ class PPOClipAgent:
         probs = self._trajectories["probs"]
         actions = self._trajectories["actions"]
 
-        # Flatten logits for softmax
-        print("old_log_probs shape:", old_log_probs.shape)
-
         dist = Categorical(probs)
         old_log_probs = dist.log_prob(actions)
 
@@ -241,7 +239,7 @@ class PPOClipAgent:
             print("=== Update ===")
             # Get rewards and dones from trajectories
             rewards = self._trajectories["rewards"]
-            dones = self._trajectories["masks"]
+            dones = (self._trajectories["rewards"] != 0).float()
 
             values = self._critic.forward(spatial_tensor, global_info)
 
@@ -288,7 +286,8 @@ class PPOClipAgent:
             self.critic_optimizer.zero_grad()
             
             print("2. Computing critic loss...")
-            loss = MSELoss(rewards_to_go, values)
+            criterion = nn.MSELoss()
+            loss = criterion(values, rewards_to_go)
             
             print("3. Performing critic backprop...")
             loss.backward()
