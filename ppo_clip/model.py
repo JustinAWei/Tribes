@@ -111,7 +111,13 @@ class PPOClipAgent:
 
         self._batch_size = 1000
         self._epochs = 10
-        self._trajectories = torch.tensor([])
+        self._trajectories = {
+            # "observations": torch.empty((0, 1), dtype=torch.float),
+            "actions": torch.empty((0, 6), dtype=torch.long),  # Assuming actions have shape [6]
+            "rewards": torch.empty((0, 1), dtype=torch.float),  # Assuming rewards are scalar
+            "probs": torch.empty((0, 1), dtype=torch.float),  # Assuming probs are scalar
+            "masks": torch.empty((0, 1), dtype=torch.float)  # Assuming masks are scalar
+        }
         self._counter = 0
 
     def to(self, device):
@@ -140,8 +146,8 @@ class PPOClipAgent:
         batch_size = spatial_tensor.shape[0]
 
         # Create mask tensor of -inf everywhere
-        mask = torch.full((batch_size, *self.output_size), float('-inf')) # -> (batch_size, action_space_size)
-        print("mask shape:", mask.shape)
+        masks = torch.full((batch_size, *self.output_size), float('-inf')) # -> (batch_size, action_space_size)
+        print("mask shape:", masks.shape)
         # Convert valid actions to tensor indices and set to 0 in mask
         # Convert valid actions to indices in flattened action space
         for batch_idx, actions in enumerate([valid_actions]):
@@ -149,27 +155,30 @@ class PPOClipAgent:
             for action in actions:
                 print("action:", action)
                 # Set corresponding position in mask to 0 to allow this action
-                mask[batch_idx][action[0]][action[1]][action[2]][action[3]][action[4]][action[5]] = 0
+                masks[batch_idx][action[0]][action[1]][action[2]][action[3]][action[4]][action[5]] = 0
 
         # compute rewards
         rewards = torch.tensor([reward_fn(game_state) for game_state in [game_state]])
         print("rewards shape:", rewards.shape)
 
         # Collect trajectory
-        actions, probs = self.get_action(spatial_tensor, global_info, mask)
-        self._trajectories = torch.stack((
-            torch.tensor(actions),
-            torch.tensor(rewards),
-            probs,
-            mask
-        ), dim=0)
+        actions, probs = self.get_action([game_state], [valid_actions], masks)
+        # Stack into trajectories
+        self._trajectories = {
+            # "observations": torch.stack((self._trajectories["observations"], game_state), dim=0),
+            "actions": torch.stack((self._trajectories["actions"], actions), dim=0),
+            "rewards": torch.stack((self._trajectories["rewards"], rewards), dim=0),
+            "probs": torch.stack((self._trajectories["probs"], probs), dim=0),
+            "masks": torch.stack((self._trajectories["masks"], masks), dim=0)
+        }
+
 
         print("\n=== Trajectory Shapes ===")
-        print("game_state shape:", self._trajectories[0].shape)
-        print("actions shape:", self._trajectories[1].shape) 
-        print("rewards shape:", self._trajectories[2].shape)
-        print("probs shape:", self._trajectories[3].shape)
-        print("mask shape:", self._trajectories[4].shape)
+        # print("game_state shape:", self._trajectories["observations"].shape)
+        print("actions shape:", self._trajectories["actions"].shape) 
+        print("rewards shape:", self._trajectories["rewards"].shape)
+        print("probs shape:", self._trajectories["probs"].shape)
+        print("mask shape:", self._trajectories["masks"].shape)
         
         if self._counter % self._batch_size == 0:
             new_log_probs = self._update(game_state, valid_actions, old_log_probs)
@@ -336,7 +345,7 @@ class PPOClipAgent:
 
         return new_log_probs
 
-    def get_action(self, spatial_tensor, global_info, mask):
+    def get_action(self, spatial_tensor, global_info, masks):
 
         print("spatial_tensor shape:", spatial_tensor.shape)
         print("global_info shape:", global_info.shape)
@@ -346,7 +355,7 @@ class PPOClipAgent:
         print("logits shape:", logits.shape)
         
         # Add mask to logits to keep valid actions and mask out invalid ones
-        masked_logits = logits.add(mask)  # Using in-place batch addition
+        masked_logits = logits.add(masks)  # Using in-place batch addition
         print("masked_logits shape:", masked_logits.shape)
 
         # Get action probabilities and select action
