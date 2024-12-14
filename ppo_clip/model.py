@@ -110,10 +110,12 @@ class PPOClipAgent:
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
         self.epsilon = 0.2
-        self._batch_size = 1
+        self._batch_size = 8
         self._epochs = 2
         self._trajectories = {
-            # "observations": torch.empty((0, 1), dtype=torch.float),
+            "spatial_tensor": torch.empty((0, BOARD_LEN, BOARD_LEN, 27), dtype=torch.float),
+            "global_info": torch.empty((0, 2), dtype=torch.float),
+
             "actions": torch.empty((0, 6), dtype=torch.long),  # [batch_size, action_dims] from actions shape: torch.Size([B, num_dimensions])
             "rewards": torch.empty((0, 1), dtype=torch.float),   # [batch_size] from rewards shape: torch.Size([1])
             "probs": torch.empty((0, np.prod(self.output_size)), dtype=torch.float),  # [batch_size, flattened_action_space] from probs shape shown in get_action()
@@ -167,9 +169,10 @@ class PPOClipAgent:
         print("probs shape:", probs.shape)
         print("masks shape:", masks.shape)
         print("rewards shape:", rewards.shape)
-        # Stack into trajectories
+
         self._trajectories = {
-            # "observations": torch.stack((self._trajectories["observations"], game_state), dim=0),
+            "spatial_tensor": torch.cat((self._trajectories["spatial_tensor"], spatial_tensor), dim=0),
+            "global_info": torch.cat((self._trajectories["global_info"], global_info), dim=0),
             "actions": torch.cat((self._trajectories["actions"], actions), dim=0),
             "rewards": torch.cat((self._trajectories["rewards"], rewards), dim=0),
             "probs": torch.cat((self._trajectories["probs"], probs), dim=0),
@@ -178,14 +181,15 @@ class PPOClipAgent:
 
 
         print("\n=== Trajectory Shapes ===")
-        # print("game_state shape:", self._trajectories["observations"].shape)
+        print("spatial_tensor shape:", self._trajectories["spatial_tensor"].shape)
+        print("global_info shape:", self._trajectories["global_info"].shape)
         print("actions shape:", self._trajectories["actions"].shape) 
         print("rewards shape:", self._trajectories["rewards"].shape)
         print("probs shape:", self._trajectories["probs"].shape)
         print("mask shape:", self._trajectories["masks"].shape)
         
         if self._counter % self._batch_size == 0:
-            self._update(spatial_tensor, global_info, masks)
+            self._update()
 
         return actions[0].tolist()
 
@@ -228,18 +232,33 @@ class PPOClipAgent:
         returns = advantages + values
         return returns, advantages
 
-    def _update(self, spatial_tensor, global_info, masks):
+    def _update(self):
+        print("=== Update ===")
+
         probs = self._trajectories["probs"]
         actions = self._trajectories["actions"]
 
+        print("actions shape:", actions.shape)
+        print("probs shape:", probs.shape)
+
         dist = Categorical(probs)
-        old_log_probs = dist.log_prob(actions)
+
+        print("dist:", dist)
+
+        # translate actions to flat indices using ravel_multi_index
+        flat_actions = np.ravel_multi_index(tuple(actions.T), self.output_size)
+        flat_actions = torch.tensor(flat_actions)
+        old_log_probs = dist.log_prob(flat_actions)
+        print("old_log_probs shape:", old_log_probs.shape)
 
         for i in range(self._epochs):
-            print("=== Update ===")
+            print("=== Epoch", i, "===")
             # Get rewards and dones from trajectories
             rewards = self._trajectories["rewards"]
             dones = (self._trajectories["rewards"] != 0).float()
+            spatial_tensor = self._trajectories["spatial_tensor"]
+            global_info = self._trajectories["global_info"]
+            masks = self._trajectories["masks"]
 
             values = self._critic.forward(spatial_tensor, global_info)
 
@@ -267,7 +286,9 @@ class PPOClipAgent:
             print("old_log_probs shape:", old_log_probs.shape)
 
             dist = Categorical(new_probs)
-            new_log_probs = dist.log_prob(actions)
+            flat_actions = np.ravel_multi_index(tuple(actions.T), self.output_size)
+            flat_actions = torch.tensor(flat_actions)
+            new_log_probs = dist.log_prob(flat_actions)
 
             # entropy = probs.entropy()  
 
