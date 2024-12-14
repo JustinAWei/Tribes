@@ -130,8 +130,6 @@ class PPOClipAgent:
         return self
         
     def run(self, id, game_state, valid_actions):
-        # TODO: fix old_log_probs calculation
-        old_log_probs = torch.randn(self.output_size)
         self._counter += 1
 
         # game_states = [batch_size, 1]
@@ -186,8 +184,7 @@ class PPOClipAgent:
         print("mask shape:", self._trajectories["masks"].shape)
         
         if self._counter % self._batch_size == 0:
-            new_log_probs = self._update(spatial_tensor, global_info, masks, old_log_probs)
-            old_log_probs = new_log_probs
+            self._update(spatial_tensor, global_info, masks)
 
         return actions[0].tolist()
 
@@ -230,79 +227,75 @@ class PPOClipAgent:
         returns = advantages + values
         return returns, advantages
 
-    def _update(self, spatial_tensor, global_info, masks, old_log_probs):
-        print("=== Update ===")
-        # Get rewards and dones from trajectories
-        rewards = self._trajectories["rewards"]
-        dones = self._trajectories["masks"]
-
-        values = self._critic.forward(spatial_tensor, global_info)
-
-        print("\nrewards:", rewards)
-        print("\nvalues:", values) 
-        print("\ndones:", dones)
-
-        # Advantage
-        rewards_to_go, advantages = self.advantage(rewards, values, dones)
-
-        print("\nrewards_to_go:", rewards_to_go)
-        print("\nadvantages:", advantages)
-
-
-        print("\n=== Actor Update ===")
-        self.actor_optimizer.zero_grad()
-
-
-        print("4. Computing action probabilities...")
-
+    def _update(self, spatial_tensor, global_info, masks):
         probs = self._trajectories["probs"]
         actions = self._trajectories["actions"]
 
         # Flatten logits for softmax
         print("old_log_probs shape:", old_log_probs.shape)
 
-        new_log_probs = probs.log_prob(actions.view(-1))
-        entropy = probs.entropy()  
+        dist = Categorical(probs)
+        old_log_probs = dist.log_prob(actions)
 
-        print("6. Computing PPO ratios and losses...") 
-        # Ensure old_log_probs and new_log_probs have the same shape as advantages
-        old_log_probs = old_log_probs.view(-1)
-        new_log_probs = new_log_probs.view(-1)
-        advantages = advantages.view(-1)
+        for i in range(self._epochs):
+            print("=== Update ===")
+            # Get rewards and dones from trajectories
+            rewards = self._trajectories["rewards"]
+            dones = self._trajectories["masks"]
 
-        # Debug: Print shapes to verify they match
-        print("old_log_probs shape:", old_log_probs.shape)
-        print("new_log_probs shape:", new_log_probs.shape)
-        print("advantages shape:", advantages.shape)
+            values = self._critic.forward(spatial_tensor, global_info)
 
-        ratio = torch.exp(new_log_probs - old_log_probs.detach())
-        surrogate1 = ratio * advantages.view(-1)
-        surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages.view(-1)
-        actor_loss = -torch.min(surrogate1, surrogate2).mean()
+            print("\nrewards:", rewards)
+            print("\nvalues:", values) 
+            print("\ndones:", dones)
 
+            # Advantage
+            rewards_to_go, advantages = self.advantage(rewards, values, dones)
 
-
-
+            print("\nrewards_to_go:", rewards_to_go)
+            print("\nadvantages:", advantages)
 
 
+            print("\n=== Actor Update ===")
+            self.actor_optimizer.zero_grad()
 
+            print("4. Computing action probabilities...")
 
-        print("7. Performing actor backprop...")
-        actor_loss.backward()
-        self.actor_optimizer.step()
+            actions = self._trajectories["actions"]
 
-        print("\n=== Critic Update ===") 
-        print("1. Zeroing critic gradients...")
-        self.critic_optimizer.zero_grad()
-        
-        print("2. Computing critic loss...")
-        loss = MSELoss(rewards_to_go, values)
-        
-        print("3. Performing critic backprop...")
-        loss.backward()
-        self.critic_optimizer.step()
+            _, new_probs = self.get_action(spatial_tensor, global_info, masks)
+
+            # Flatten logits for softmax
+            print("old_log_probs shape:", old_log_probs.shape)
+
+            dist = Categorical(new_probs)
+            new_log_probs = dist.log_prob(actions)
+
+            # entropy = probs.entropy()  
+
+            # Ensure old_log_probs and new_log_probs have the same shape as advantages
+            ratio = torch.exp(new_log_probs - old_log_probs.detach())
+            surrogate1 = ratio * advantages
+            surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages
+            actor_loss = -torch.min(surrogate1, surrogate2).mean()
+
+            print("7. Performing actor backprop...")
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            print("\n=== Critic Update ===") 
+            print("1. Zeroing critic gradients...")
+            self.critic_optimizer.zero_grad()
+            
+            print("2. Computing critic loss...")
+            loss = MSELoss(rewards_to_go, values)
+            
+            print("3. Performing critic backprop...")
+            loss.backward()
+            self.critic_optimizer.step()
 
         return new_log_probs
+
     def get_action(self, spatial_tensor, global_info, masks):
 
         # Get action logits from actor network
