@@ -111,7 +111,7 @@ class PPOClipAgent:
 
         self.epsilon = 0.2
         self._batch_size = 1
-        self._epochs = 10
+        self._epochs = 2
         self._trajectories = {
             # "observations": torch.empty((0, 1), dtype=torch.float),
             "actions": torch.empty((0, 6), dtype=torch.long),  # [batch_size, action_dims] from actions shape: torch.Size([B, num_dimensions])
