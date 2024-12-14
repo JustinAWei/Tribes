@@ -289,7 +289,7 @@ class PPOClipAgent:
             # print("=== Epoch", i, "===")
             # Get rewards and dones from trajectories
             rewards = torch.cat(self._trajectories["rewards"], dim=0)
-            dones = (rewards != 0).float()
+            dones = ((rewards == 1) | (rewards == -1)).float()
             spatial_tensor = torch.cat(self._trajectories["spatial_tensor"], dim=0)
             global_info = torch.cat(self._trajectories["global_info"], dim=0)
             masks = torch.cat(self._trajectories["masks"], dim=0)

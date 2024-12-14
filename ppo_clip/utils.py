@@ -222,22 +222,53 @@ def game_over(gs):
     return gs['gameIsOver']
 
 def reward_fn(gs):
-    # which tribe is active?
+    '''
+    Ranking is a list of tribes scored by WIN, score, tech, cities, production, wars, stars
+
+        [{'id': 1,
+            'numCities': 1,
+            'numStars': 0,
+            'numTechsResearched': 24,
+            'numWars': 0,
+            'production': 7,
+            'result': 'INCOMPLETE',
+            'score': 8025},
+            {'id': 0,
+            'numCities': 1,
+            'numStars': 0,
+            'numTechsResearched': 18,
+            'numWars': 0,
+            'production': 7,
+            'result': 'INCOMPLETE',
+            'score': 4515}],
+    '''
+
+    reward = 0
     active_tribe_id = gs['board']['activeTribeID']
 
+    # TODO: use this when we send the game state on end
     # which tribe is the winner?
     tribes = gs['board']['tribes']
     for tribe in tribes:
         # print("tribe", tribe)
-        if tribe['tribeId'] == active_tribe_id: 
+        if tribe['actorId'] == active_tribe_id: 
             # print("active_tribe_id", active_tribe_id)
             # print("winner", tribe['winner'])
             if tribe['winner'] == "WIN":
-                return 1
-    return 0
+                reward = 1
+            elif tribe['winner'] == "LOSE":
+                reward = -1
+            else:
+                ranking = gs['ranking']
+                for tribe in ranking:
+                    if tribe['id'] == active_tribe_id:
+                        # Note: this should be between 0 and 1
+                        reward = (tribe['numTechsResearched'] + tribe['numCities'] + tribe['production'])
+                        while not reward < 1:
+                            reward = reward / 10
 
-
-
+    print("reward", reward)
+    return reward
 
 @timing_decorator
 def filter_actions(gs):
