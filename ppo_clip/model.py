@@ -128,8 +128,35 @@ class PPOClipAgent:
         old_log_probs = torch.randn(self.output_size)
         self._counter += 1
 
+        # game_states = [batch_size, 1]
+        # valid action = [batch_size, N, 6]
+
+        # Get state features
+        [spatial_tensor, global_info] = game_state_to_vector([game_state]) # -> (batch_size, board_size, board_size, 27), (batch_size, 2)
+
+        print("spatial_tensor shape:", spatial_tensor.shape)
+        print("global_info shape:", global_info.shape)
+
+        batch_size = spatial_tensor.shape[0]
+
+        # Create mask tensor of -inf everywhere
+        mask = torch.full((batch_size, *self.output_size), float('-inf')) # -> (batch_size, action_space_size)
+        print("mask shape:", mask.shape)
+        # Convert valid actions to tensor indices and set to 0 in mask
+        # Convert valid actions to indices in flattened action space
+        for batch_idx, actions in enumerate([valid_actions]):
+            # Each action is [action_type, x1, y1, x2, y2, extra]
+            for action in actions:
+                print("action:", action)
+                # Set corresponding position in mask to 0 to allow this action
+                mask[batch_idx][action[0]][action[1]][action[2]][action[3]][action[4]][action[5]] = 0
+
+        # compute rewards
+        rewards = torch.tensor([reward_fn(game_state) for game_state in [game_state]])
+        print("rewards shape:", rewards.shape)
+
         # Collect trajectory
-        actions, rewards, probs, mask = self.get_action([game_state], [valid_actions])
+        actions, probs = self.get_action(spatial_tensor, global_info, mask)
         self._trajectories = torch.stack((
             torch.tensor(actions),
             torch.tensor(rewards),
@@ -309,42 +336,16 @@ class PPOClipAgent:
 
         return new_log_probs
 
-    def get_action(self, game_states: list, valid_actions: list[list[int]]):
+    def get_action(self, spatial_tensor, global_info, mask):
 
-        # game_states = [batch_size, 1]
-        # valid action = [batch_size, N, 6]
-        batch_size = len(game_states)
-        assert len(valid_actions) == batch_size
-
-        # Get state features
-        [spatial_tensor, global_info] = game_state_to_vector(game_states) # -> (batch_size, board_size, board_size, 27), (batch_size, 2)
         print("spatial_tensor shape:", spatial_tensor.shape)
         print("global_info shape:", global_info.shape)
-        
+
         # Get action logits from actor network
         logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
         print("logits shape:", logits.shape)
         
-        # Create mask tensor of -inf everywhere
-        mask = torch.full((batch_size, *self.output_size), float('-inf')) # -> (batch_size, action_space_size)
-        print("mask shape:", mask.shape)
-        # Convert valid actions to tensor indices and set to 0 in mask
-        # Convert valid actions to indices in flattened action space
-        for batch_idx, actions in enumerate(valid_actions):
-            # Each action is [action_type, x1, y1, x2, y2, extra]
-            for action in actions:
-                print("action:", action)
-                # Set corresponding position in mask to 0 to allow this action
-                mask[batch_idx][action[0]][action[1]][action[2]][action[3]][action[4]][action[5]] = 0
-        
         # Add mask to logits to keep valid actions and mask out invalid ones
-
-        print("\nSample of logits:")
-        print(logits[0, 0:2, 0:2, 0:2, 0:2, 0:2, 0:2])  # Print small subset of first batch item
-        
-        print("\nSample of mask:")
-        print(mask[0, 0:2, 0:2, 0:2, 0:2, 0:2, 0:2])  # Print same subset of mask for comparison
-
         masked_logits = logits.add(mask)  # Using in-place batch addition
         print("masked_logits shape:", masked_logits.shape)
 
@@ -355,12 +356,19 @@ class PPOClipAgent:
         print("probs shape:", probs.shape)
         dist = Categorical(probs)
         flat_indices = dist.sample()  # Will sample for each item in batch
+
+        print("flat", flat_indices)
         print("flat_indices shape:", flat_indices.shape)
-        # turn into multi-dimensional action
-        actions = torch.tensor(np.array(np.unravel_index(flat_indices, self.output_size)))
+
+        # Convert flat indices [B, 1] to multi-dimensional indices using torch.unravel_index
+        actions = torch.stack(
+            torch.unravel_index(
+                flat_indices,
+                self._actor.output_size
+            ),
+            dim=1
+        )  # Shape: [B, num_dimensions]
+
         print("actions shape:", actions.shape)
 
-        # compute rewards
-        rewards = torch.tensor([reward_fn(game_state) for game_state in game_states])
-        print("rewards shape:", rewards.shape)
-        return actions, rewards, probs, mask
+        return actions, probs
