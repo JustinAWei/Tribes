@@ -35,7 +35,7 @@ async def receive_data(request: Request):
         valid_actions = filter_actions(gs)
         
         action = agent.run(0, gs, valid_actions)
-        print("Action: ", action)
+        # print("Action: ", action)
 
         # convert last action to (action_type, extra_var)
         x2, y2, action_type, extra_var = index_to_action_tuple(action[-1])

@@ -263,7 +263,6 @@ def reward_fn(gs):
                         max_intermediate_rewards = 100 + BOARD_LEN ** 2 + 1000
                         reward = (tribe['numTechsResearched'] + tribe['numCities'] + tribe['production']) / max_intermediate_rewards
 
-    print("reward", reward)
     return reward
 
 @timing_decorator
