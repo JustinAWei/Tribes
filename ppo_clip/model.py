@@ -11,6 +11,7 @@ import math
 from vectorize_game_state import game_state_to_vector
 from torch.distributions import Categorical
 from utils import timing_decorator
+
 # To reduce duplicate code, this is used for both the actor and the critic
 # NOTE: we are not batching the input for now
 class FeatureExtractor(nn.Module):
@@ -113,16 +114,24 @@ class PPOClipAgent:
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
         self.epsilon = 0.2
-        self._batch_size = 4096
+        self._batch_size = 200
         self._epochs = 2
+#         self._base_trajectories = {
+#             "spatial_tensor": torch.empty((0, BOARD_LEN, BOARD_LEN, 27), dtype=torch.float),
+#             "global_info": torch.empty((0, 2), dtype=torch.float),
+# 
+#             "actions": torch.empty((0, 6), dtype=torch.long),  # [batch_size, action_dims] from actions shape: torch.Size([B, num_dimensions])
+#             "rewards": torch.empty((0, 1), dtype=torch.float),   # [batch_size] from rewards shape: torch.Size([1])
+#             "probs": torch.empty((0, np.prod(self.output_size)), dtype=torch.float),  # [batch_size, flattened_action_space] from probs shape shown in get_action()
+#             "masks": torch.empty((0, *self.output_size), dtype=torch.float)  # [batch_size, *output_size] from mask shape: torch.Size([1, *output_size])
+#         }
         self._base_trajectories = {
-            "spatial_tensor": torch.empty((0, BOARD_LEN, BOARD_LEN, 27), dtype=torch.float),
-            "global_info": torch.empty((0, 2), dtype=torch.float),
-
-            "actions": torch.empty((0, 6), dtype=torch.long),  # [batch_size, action_dims] from actions shape: torch.Size([B, num_dimensions])
-            "rewards": torch.empty((0, 1), dtype=torch.float),   # [batch_size] from rewards shape: torch.Size([1])
-            "probs": torch.empty((0, np.prod(self.output_size)), dtype=torch.float),  # [batch_size, flattened_action_space] from probs shape shown in get_action()
-            "masks": torch.empty((0, *self.output_size), dtype=torch.float)  # [batch_size, *output_size] from mask shape: torch.Size([1, *output_size])
+            "spatial_tensor": [],
+            "global_info": [],
+            "actions": [],
+            "rewards": [],
+            "probs": [],
+            "masks": []
         }
         self._trajectories = self._base_trajectories.copy()
         self._counter = 0
@@ -137,6 +146,7 @@ class PPOClipAgent:
         return self
         
     @timing_decorator
+    @profile
     def run(self, id, game_state, valid_actions):
         self._counter += 1
 
@@ -175,14 +185,20 @@ class PPOClipAgent:
         # print("masks shape:", masks.shape)
         # print("rewards shape:", rewards.shape)
 
-        self._trajectories = {
-            "spatial_tensor": torch.cat((self._trajectories["spatial_tensor"], spatial_tensor), dim=0),
-            "global_info": torch.cat((self._trajectories["global_info"], global_info), dim=0),
-            "actions": torch.cat((self._trajectories["actions"], actions), dim=0),
-            "rewards": torch.cat((self._trajectories["rewards"], rewards), dim=0),
-            "probs": torch.cat((self._trajectories["probs"], probs), dim=0),
-            "masks": torch.cat((self._trajectories["masks"], masks), dim=0) 
-        }
+        # self._trajectories = {
+        #     "spatial_tensor": torch.cat((self._trajectories["spatial_tensor"], spatial_tensor), dim=0),
+        #     "global_info": torch.cat((self._trajectories["global_info"], global_info), dim=0),
+        #     "actions": torch.cat((self._trajectories["actions"], actions), dim=0),
+        #     "rewards": torch.cat((self._trajectories["rewards"], rewards), dim=0),
+        #     "probs": torch.cat((self._trajectories["probs"], probs), dim=0),
+        #     "masks": torch.cat((self._trajectories["masks"], masks), dim=0) 
+        # }
+        self._trajectories["spatial_tensor"].append(spatial_tensor)
+        self._trajectories["global_info"].append(global_info)
+        self._trajectories["actions"].append(actions)
+        self._trajectories["rewards"].append(rewards)
+        self._trajectories["probs"].append(probs)
+        self._trajectories["masks"].append(masks)
 
 
         # print("\n=== Trajectory Shapes ===")
@@ -192,6 +208,15 @@ class PPOClipAgent:
         # print("rewards shape:", self._trajectories["rewards"].shape)
         # print("probs shape:", self._trajectories["probs"].shape)
         # print("mask shape:", self._trajectories["masks"].shape)
+
+        if self._counter % 100 == 0:
+            print("=== Trajectory Shapes ===")
+            print("spatial_tensor shape:", len(self._trajectories["spatial_tensor"]), self._trajectories["spatial_tensor"][0].shape)
+            print("global_info shape:", len(self._trajectories["global_info"]), self._trajectories["global_info"][0].shape)
+            print("actions shape:", len(self._trajectories["actions"]), self._trajectories["actions"][0].shape) 
+            print("rewards shape:", len(self._trajectories["rewards"]), self._trajectories["rewards"][0].shape)
+            print("probs shape:", len(self._trajectories["probs"]), self._trajectories["probs"][0].shape)
+            print("mask shape:", len(self._trajectories["masks"]), self._trajectories["masks"][0].shape)
         
         if self._counter % self._batch_size == 0:
             self._update()
@@ -240,11 +265,12 @@ class PPOClipAgent:
         return returns, advantages
 
     @timing_decorator
+    @profile
     def _update(self):
         # print("=== Update ===")
 
-        probs = self._trajectories["probs"]
-        actions = self._trajectories["actions"]
+        probs = torch.cat(self._trajectories["probs"], dim=0)
+        actions = torch.cat(self._trajectories["actions"], dim=0)
 
         # print("actions shape:", actions.shape)
         # print("probs shape:", probs.shape)
@@ -262,11 +288,11 @@ class PPOClipAgent:
         for i in range(self._epochs):
             # print("=== Epoch", i, "===")
             # Get rewards and dones from trajectories
-            rewards = self._trajectories["rewards"]
-            dones = (self._trajectories["rewards"] != 0).float()
-            spatial_tensor = self._trajectories["spatial_tensor"]
-            global_info = self._trajectories["global_info"]
-            masks = self._trajectories["masks"]
+            rewards = torch.cat(self._trajectories["rewards"], dim=0)
+            dones = (rewards != 0).float()
+            spatial_tensor = torch.cat(self._trajectories["spatial_tensor"], dim=0)
+            global_info = torch.cat(self._trajectories["global_info"], dim=0)
+            masks = torch.cat(self._trajectories["masks"], dim=0)
 
             values = self._critic.forward(spatial_tensor, global_info)
 
@@ -285,8 +311,6 @@ class PPOClipAgent:
             self.actor_optimizer.zero_grad()
 
             # print("4. Computing action probabilities...")
-
-            actions = self._trajectories["actions"]
 
             _, new_probs = self.get_action(spatial_tensor, global_info, masks)
 
@@ -325,35 +349,42 @@ class PPOClipAgent:
         return new_log_probs
 
     @timing_decorator
+    @profile
     def get_action(self, spatial_tensor, global_info, masks):
+        try:
+            # Get action logits from actor network
+            logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
+            # print("logits shape:", logits.shape)
+            
+            # Add mask to logits to keep valid actions and mask out invalid ones
+            masked_logits = logits.add(masks)  # Using in-place batch addition
+            # print("masked_logits shape:", masked_logits.shape)
 
-        # Get action logits from actor network
-        logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
-        # print("logits shape:", logits.shape)
-        
-        # Add mask to logits to keep valid actions and mask out invalid ones
-        masked_logits = logits.add(masks)  # Using in-place batch addition
-        # print("masked_logits shape:", masked_logits.shape)
+            # Get action probabilities and select action
+            probs = torch.softmax(masked_logits.flatten(start_dim=1), dim=1)  # Keep batch dimension
 
-        # Get action probabilities and select action
-        probs = torch.softmax(masked_logits.flatten(start_dim=1), dim=1)  # Keep batch dimension
+            # print("probs shape:", probs.shape)
+            dist = Categorical(probs)
+            flat_indices = dist.sample()  # Will sample for each item in batch
 
-        # print("probs shape:", probs.shape)
-        dist = Categorical(probs)
-        flat_indices = dist.sample()  # Will sample for each item in batch
+            # print("flat", flat_indices)
+            # print("flat_indices shape:", flat_indices.shape)
 
-        # print("flat", flat_indices)
-        # print("flat_indices shape:", flat_indices.shape)
+            # Convert flat indices [B, 1] to multi-dimensional indices using torch.unravel_index
+            actions = torch.stack(
+                torch.unravel_index(
+                    flat_indices,
+                    self._actor.output_size
+                ),
+                dim=1
+            )  # Shape: [B, num_dimensions]
 
-        # Convert flat indices [B, 1] to multi-dimensional indices using torch.unravel_index
-        actions = torch.stack(
-            torch.unravel_index(
-                flat_indices,
-                self._actor.output_size
-            ),
-            dim=1
-        )  # Shape: [B, num_dimensions]
+            # print("actions shape:", actions.shape)
 
-        # print("actions shape:", actions.shape)
-
-        return actions, probs
+            return actions, probs
+        except Exception as e:
+            print(f"Error in get_action: {e}")
+            print(f"Logits shape: {logits.shape}")
+            print(f"Masks shape: {masks.shape}")
+            print(f"Flat indices: {flat_indices}")
+            print(f"Actor output size: {self._actor.output_size}")

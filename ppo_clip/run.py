@@ -42,6 +42,12 @@ async def receive_data(request: Request):
 
     except Exception as e:
         print(f"Error processing game state: {e}")
+        print("spatial_tensor shape:", len(agent._trajectories["spatial_tensor"]), agent._trajectories["spatial_tensor"][0].shape)
+        print("global_info shape:", len(agent._trajectories["global_info"]), agent._trajectories["global_info"][0].shape)
+        print("actions shape:", len(agent._trajectories["actions"]), agent._trajectories["actions"][0].shape) 
+        print("rewards shape:", len(agent._trajectories["rewards"]), agent._trajectories["rewards"][0].shape)
+        print("probs shape:", len(agent._trajectories["probs"]), agent._trajectories["probs"][0].shape)
+        print("mask shape:", len(agent._trajectories["masks"]), agent._trajectories["masks"][0].shape)
         return {"status": 500, "message": str(e)}
 
 
