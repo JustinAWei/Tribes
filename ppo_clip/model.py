@@ -113,10 +113,10 @@ class PPOClipAgent:
         self._epochs = 10
         self._trajectories = {
             # "observations": torch.empty((0, 1), dtype=torch.float),
-            "actions": torch.empty((0, 6), dtype=torch.long),  # Assuming actions have shape [6]
-            "rewards": torch.empty((0, 1), dtype=torch.float),  # Assuming rewards are scalar
-            "probs": torch.empty((0, 1), dtype=torch.float),  # Assuming probs are scalar
-            "masks": torch.empty((0, 1), dtype=torch.float)  # Assuming masks are scalar
+            "actions": torch.empty((0, 6), dtype=torch.long),  # [batch_size, action_dims] from actions shape: torch.Size([B, num_dimensions])
+            "rewards": torch.empty((0, 1), dtype=torch.float),   # [batch_size] from rewards shape: torch.Size([1])
+            "probs": torch.empty((0, np.prod(self.output_size)), dtype=torch.float),  # [batch_size, flattened_action_space] from probs shape shown in get_action()
+            "masks": torch.empty((0, *self.output_size), dtype=torch.float)  # [batch_size, *output_size] from mask shape: torch.Size([1, *output_size])
         }
         self._counter = 0
 
@@ -158,18 +158,23 @@ class PPOClipAgent:
                 masks[batch_idx][action[0]][action[1]][action[2]][action[3]][action[4]][action[5]] = 0
 
         # compute rewards
-        rewards = torch.tensor([reward_fn(game_state) for game_state in [game_state]])
+        rewards = torch.tensor([[reward_fn(game_state) for game_state in [game_state]]])
         print("rewards shape:", rewards.shape)
 
         # Collect trajectory
         actions, probs = self.get_action(spatial_tensor, global_info, masks)
+        print("ALL SHAPES")
+        print("actions shape:", actions.shape)
+        print("probs shape:", probs.shape)
+        print("masks shape:", masks.shape)
+        print("rewards shape:", rewards.shape)
         # Stack into trajectories
         self._trajectories = {
             # "observations": torch.stack((self._trajectories["observations"], game_state), dim=0),
-            "actions": torch.stack((self._trajectories["actions"], actions), dim=0),
-            "rewards": torch.stack((self._trajectories["rewards"], rewards), dim=0),
-            "probs": torch.stack((self._trajectories["probs"], probs), dim=0),
-            "masks": torch.stack((self._trajectories["masks"], masks), dim=0)
+            "actions": torch.cat((self._trajectories["actions"], actions), dim=0),
+            "rewards": torch.cat((self._trajectories["rewards"], rewards), dim=0),
+            "probs": torch.cat((self._trajectories["probs"], probs), dim=0),
+            "masks": torch.cat((self._trajectories["masks"], masks), dim=0) 
         }
 
 
