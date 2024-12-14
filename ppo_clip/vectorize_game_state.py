@@ -38,6 +38,7 @@ UNIT_TYPE_MAP = {
 }
 
 @timing_decorator
+# @profile
 def game_state_to_vector(gs_list, device):
     """
     Vectorize a batch of game states into tensors.
@@ -68,6 +69,7 @@ def game_state_to_vector(gs_list, device):
         
     return spatial_tensors, global_infos
 
+# @profile
 def _process_single_game_state(gs, device):
     """
     Vectorize the game state into a numpy array. Below is the structure of the game state (and below that is the vectorization of the relevant features since not all features are relevant to the game for now).
@@ -242,30 +244,29 @@ def _process_single_game_state(gs, device):
     board_size = len(gs['board']['terrains'])
     
     # Initialize arrays with appropriate shapes
-    terrain_array = torch.zeros((board_size, board_size, 1), dtype=torch.int32).to(device)
-    resource_array = torch.full((board_size, board_size, 1), -1, dtype=torch.int32).to(device)
-    building_array = torch.full((board_size, board_size, 1), -1, dtype=torch.int32).to(device)
+    terrain_array = torch.tensor([[[TERRAIN_MAP.get(cell, 0)] for cell in row] 
+                            for row in gs['board']['terrains']], 
+                           dtype=torch.int32, 
+                           device=device)
+    resource_array = torch.tensor([[[RESOURCE_MAP.get(cell, -1) if cell is not None else -1] 
+                              for cell in row]
+                             for row in gs['board']['resources']], 
+                            dtype=torch.int32, 
+                            device=device)
+    building_array = torch.tensor([[[BUILDING_MAP.get(cell, -1) if cell is not None else -1] 
+                              for cell in row]
+                             for row in gs['board']['buildings']], 
+                            dtype=torch.int32, 
+                            device=device)
     unit_array = torch.full((board_size, board_size, 13), -1, dtype=torch.int32).to(device)  # -1 for no unit
     city_array = torch.full((board_size, board_size, 10), -1, dtype=torch.int32).to(device)   # -1 for no city
-    trade_network = torch.zeros((board_size, board_size, 1), dtype=torch.int32).to(device)
-
-
-    # Fill terrain array
-    for y, row in enumerate(gs['board']['terrains']):
-        for x, cell in enumerate(row):
-            terrain_array[y, x, 0] = TERRAIN_MAP.get(cell, 0)
-
-    # Fill resource array
-    for y, row in enumerate(gs['board']['resources']):
-        for x, cell in enumerate(row):
-            if cell is not None:
-                resource_array[y, x, 0] = RESOURCE_MAP.get(cell, 0)
-
-    # Fill building array
-    for y, row in enumerate(gs['board']['buildings']):
-        for x, cell in enumerate(row):
-            if cell is not None:
-                building_array[y, x, 0] = BUILDING_MAP.get(cell, 0)
+    trade_network = (torch.tensor(gs['board']['tradeNetwork']['networkTiles'], 
+                            dtype=torch.int32, 
+                            device=device).reshape(board_size, board_size, 1) 
+                 if 'tradeNetwork' in gs['board'] 
+                 else torch.zeros((board_size, board_size, 1), 
+                                dtype=torch.int32, 
+                                device=device))
 
     # Fill unit array
     game_actors = gs['board']['gameActors']
@@ -332,10 +333,6 @@ def _process_single_game_state(gs, device):
                         city_pos_y
                     ], dtype=torch.int32).to(device)
 
-    # Fill trade network
-    if 'tradeNetwork' in gs['board']:
-        trade_network = torch.tensor(gs['board']['tradeNetwork']['networkTiles']).reshape(board_size, board_size, 1).to(device)
-
     # Combine all arrays into final tensor
     spatial_tensor = torch.cat([
         terrain_array,
@@ -364,7 +361,7 @@ if __name__ == "__main__":
         game_state = json.load(f)
 
     # Convert game state to vector
-    spatial_tensor, global_info = game_state_to_vector(game_state, device)
+    spatial_tensor, global_info = game_state_to_vector(game_state, DEVICE)
 
     # Print some basic information about the outputs
     print(f"Spatial tensor shape: {spatial_tensor.shape}")  # Should be (11, 11, 27)
