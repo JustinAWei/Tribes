@@ -134,75 +134,88 @@ TECH_TYPES = {
     "PHILOSOPHY": 23
 }
 
-# I want to map (Dest X, Dest Y, Action Type, [Tech, Bonus, Building, Unit]) to a single index
-action_tuples = set()
+# I want to map (Source X, Source Y, Dest X, Dest Y, Action Type, [Tech, Bonus, Building, Unit]) to a single index
+action_tuples = []
 
 # Add all action types first
 for action_type in ACTION_TYPES.keys():
-    action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
-
-    if action_type == 'RESEARCH_TECH':
-        for tech_type in TECH_TYPES.values():
-            action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], tech_type))
-    elif action_type == 'LEVEL_UP':
-        for bonus_type in BONUS_TYPES.values():
-            action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], bonus_type))
-
-    elif action_type == 'SPAWN':
-        for unit_type in UNIT_TYPES.values():
-            action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], unit_type))
 
     # which ones need an x,y?
     # any: build, resource, build road, attack, move, 
-
-    elif action_type == 'BUILD':
+    if action_type == 'BUILD':
         for building_type in BUILDING_TYPES.values():
             for x in range(BOARD_LEN):
                 for y in range(BOARD_LEN):
-                    action_tuples.add((x, y, ACTION_TYPES[action_type], building_type))
+                    action_tuples.append((x, y, ACTION_TYPES[action_type], building_type))
 
     elif action_type == 'RESOURCE_GATHERING':
         for x in range(BOARD_LEN):
             for y in range(BOARD_LEN):
-                action_tuples.add((x, y, ACTION_TYPES[action_type], MASK))
+                action_tuples.append((x, y, ACTION_TYPES[action_type], MASK))
 
     elif action_type == 'BUILD_ROAD':
         for x in range(BOARD_LEN):
             for y in range(BOARD_LEN):
-                action_tuples.add((x, y, ACTION_TYPES[action_type], MASK))
+                action_tuples.append((x, y, ACTION_TYPES[action_type], MASK))
 
     elif action_type == 'MOVE':
         for x in range(BOARD_LEN):
             for y in range(BOARD_LEN):
-                action_tuples.add((x, y, ACTION_TYPES[action_type], MASK))
+                action_tuples.append((x, y, ACTION_TYPES[action_type], MASK))
 
     elif action_type == 'ATTACK':
         for x in range(BOARD_LEN):
             for y in range(BOARD_LEN):
-                action_tuples.add((x, y, ACTION_TYPES[action_type], MASK))
+                action_tuples.append((x, y, ACTION_TYPES[action_type], MASK))
 
-
+    # self unit actions 
     # self: spawn, level_up, capture, recover, examine, make_veteran, upgrade_boat, upgrade_ship
-    elif action_type == 'CAPTURE':
-        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+    if action_type == 'CAPTURE':
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
     elif action_type == 'RECOVER':
-        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
     elif action_type == 'EXAMINE':
-        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
     elif action_type == 'MAKE_VETERAN':
-        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
     elif action_type == 'UPGRADE_BOAT':
-        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
     elif action_type == 'UPGRADE_SHIP':
-        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
+    elif action_type == 'DISBAND':
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
+
+    # self tribe actions
+    elif action_type == 'RESEARCH_TECH':
+        for tech_type in TECH_TYPES.values():
+            action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], tech_type))
+
+    # self city actions
+    elif action_type == 'LEVEL_UP':
+        for bonus_type in BONUS_TYPES.values():
+            action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], bonus_type))
+
+    elif action_type == 'SPAWN':
+        for unit_type in UNIT_TYPES.values():
+            action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], unit_type))
+
+    # end turn
+    elif action_type == 'END_TURN':
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
+
+    else:
+        print("not explicitly handled")
+        print("action_type", action_type)
+        action_tuples.append((MASK, MASK, ACTION_TYPES[action_type], MASK))
+
 
 print(action_tuples)
 # be able to convert from (action_type, extra_var) to index
 def action_tuple_to_index(x,y, action_type, extra_var):
-    return list(action_tuples).index((x,y, action_type, extra_var))
+    return action_tuples.index((x,y, action_type, extra_var))
 
 def index_to_action_tuple(index):
-    return list(action_tuples)[index]
+    return action_tuples[index]
 
 MAX_EXTRA_VARS = max(len(ACTION_TYPES.values()), len(BONUS_TYPES.values()), len(TECH_TYPES.values()), len(BUILDING_TYPES.values()), len(UNIT_TYPES.values()))
 
