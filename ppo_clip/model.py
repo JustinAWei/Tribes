@@ -162,7 +162,7 @@ class PPOClipAgent:
         print("rewards shape:", rewards.shape)
 
         # Collect trajectory
-        actions, probs = self.get_action([game_state], [valid_actions], masks)
+        actions, probs = self.get_action(spatial_tensor, global_info, masks)
         # Stack into trajectories
         self._trajectories = {
             # "observations": torch.stack((self._trajectories["observations"], game_state), dim=0),
@@ -347,9 +347,6 @@ class PPOClipAgent:
 
     def get_action(self, spatial_tensor, global_info, masks):
 
-        print("spatial_tensor shape:", spatial_tensor.shape)
-        print("global_info shape:", global_info.shape)
-
         # Get action logits from actor network
         logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
         print("logits shape:", logits.shape)
@@ -360,7 +357,6 @@ class PPOClipAgent:
 
         # Get action probabilities and select action
         probs = torch.softmax(masked_logits.flatten(start_dim=1), dim=1)  # Keep batch dimension
-        print("softmaxed probs shape:", probs.shape)
 
         print("probs shape:", probs.shape)
         dist = Categorical(probs)
