@@ -7,7 +7,7 @@ from model import PPOClipAgent
 from utils import BOARD_LEN
 
 game_state_shape = (BOARD_LEN, BOARD_LEN, 27)
-action_space_shape = (BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, len(action_tuples))
+action_space_shape = (BOARD_LEN, BOARD_LEN, len(action_tuples))
 
 print(action_space_shape)
 
@@ -35,14 +35,15 @@ async def receive_data(request: Request):
         valid_actions = filter_actions(gs)
         
         action = agent.run(0, gs, valid_actions)
-        # print("Action: ", action)
+        print("Action: ", action)
 
         # convert last action to (action_type, extra_var)
-        action_type, extra_var = index_to_action_tuple(action[-1])
+        x2, y2, action_type, extra_var = index_to_action_tuple(action[-1])
         print("Action Type: ", action_type)
         print("Extra Var: ", extra_var)
 
-        unpacked_action = [action[0], action[1], action[2], action[3], action_type, extra_var]
+        unpacked_action = [action[0], action[1], x2, y2, action_type, extra_var]
+        print("Unpacked Action: ", unpacked_action)
 
         return {
             "status": 200, 

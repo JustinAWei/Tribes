@@ -134,30 +134,72 @@ TECH_TYPES = {
     "PHILOSOPHY": 23
 }
 
-# I want to map (Action Type, [Tech, Bonus, Building, Unit]) to a single index
+# I want to map (Dest X, Dest Y, Action Type, [Tech, Bonus, Building, Unit]) to a single index
 action_tuples = set()
 
 # Add all action types first
 for action_type in ACTION_TYPES.keys():
-    action_tuples.add((ACTION_TYPES[action_type], MASK))
+    action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
 
     if action_type == 'RESEARCH_TECH':
         for tech_type in TECH_TYPES.values():
-            action_tuples.add((ACTION_TYPES[action_type], tech_type))
+            action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], tech_type))
     elif action_type == 'LEVEL_UP':
         for bonus_type in BONUS_TYPES.values():
-            action_tuples.add((ACTION_TYPES[action_type], bonus_type))
+            action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], bonus_type))
+
     elif action_type == 'SPAWN':
         for unit_type in UNIT_TYPES.values():
-            action_tuples.add((ACTION_TYPES[action_type], unit_type))
+            action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], unit_type))
+
+    # which ones need an x,y?
+    # any: build, resource, build road, attack, move, 
+
     elif action_type == 'BUILD':
         for building_type in BUILDING_TYPES.values():
-            action_tuples.add((ACTION_TYPES[action_type], building_type))
+            for x in range(BOARD_LEN):
+                for y in range(BOARD_LEN):
+                    action_tuples.add((x, y, ACTION_TYPES[action_type], building_type))
+
+    elif action_type == 'RESOURCE_GATHERING':
+        for x in range(BOARD_LEN):
+            for y in range(BOARD_LEN):
+                action_tuples.add((x, y, ACTION_TYPES[action_type], MASK))
+
+    elif action_type == 'BUILD_ROAD':
+        for x in range(BOARD_LEN):
+            for y in range(BOARD_LEN):
+                action_tuples.add((x, y, ACTION_TYPES[action_type], MASK))
+
+    elif action_type == 'MOVE':
+        for x in range(BOARD_LEN):
+            for y in range(BOARD_LEN):
+                action_tuples.add((x, y, ACTION_TYPES[action_type], MASK))
+
+    elif action_type == 'ATTACK':
+        for x in range(BOARD_LEN):
+            for y in range(BOARD_LEN):
+                action_tuples.add((x, y, ACTION_TYPES[action_type], MASK))
+
+
+    # self: spawn, level_up, capture, recover, examine, make_veteran, upgrade_boat, upgrade_ship
+    elif action_type == 'CAPTURE':
+        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+    elif action_type == 'RECOVER':
+        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+    elif action_type == 'EXAMINE':
+        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+    elif action_type == 'MAKE_VETERAN':
+        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+    elif action_type == 'UPGRADE_BOAT':
+        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
+    elif action_type == 'UPGRADE_SHIP':
+        action_tuples.add((MASK, MASK, ACTION_TYPES[action_type], MASK))
 
 print(action_tuples)
 # be able to convert from (action_type, extra_var) to index
-def action_tuple_to_index(action_type, extra_var):
-    return list(action_tuples).index((action_type, extra_var))
+def action_tuple_to_index(x,y, action_type, extra_var):
+    return list(action_tuples).index((x,y, action_type, extra_var))
 
 def index_to_action_tuple(index):
     return list(action_tuples)[index]
@@ -206,13 +248,13 @@ def filter_actions(gs):
     for action in filtered_tribe_actions:
         if action.get('actionType') == 'RESEARCH_TECH':
             tech_type = TECH_TYPES[action.get('tech')]
-            valid_actions.append([MASK, MASK, MASK, MASK, action_tuple_to_index(ACTION_TYPES[action.get('actionType')], tech_type)])
+            valid_actions.append([MASK, MASK, action_tuple_to_index(MASK, MASK, ACTION_TYPES[action.get('actionType')], tech_type)])
         elif action.get('actionType') == 'BUILD_ROAD':
             # get position
             x, y = action.get('position').get('x'), action.get('position').get('y')
-            valid_actions.append([x, y, MASK, MASK, action_tuple_to_index(ACTION_TYPES[action.get('actionType')], MASK)])
+            valid_actions.append([x, y,  action_tuple_to_index(MASK, MASK, ACTION_TYPES[action.get('actionType')], MASK)])
         else:
-            valid_actions.append([MASK, MASK, MASK, MASK, action_tuple_to_index(ACTION_TYPES[action.get('actionType')], MASK)])
+            valid_actions.append([MASK, MASK, action_tuple_to_index(MASK, MASK, ACTION_TYPES[action.get('actionType')], MASK)])
 
     # Process city actions
     # List to store filtered city actions
@@ -238,15 +280,16 @@ def filter_actions(gs):
 
             if action.get('actionType') == 'BUILD':
                 building_type = BUILDING_TYPES[action.get('buildingType')]
-                valid_actions.append([x1, y1, x2, y2, action_tuple_to_index(ACTION_TYPES[action.get('actionType')], building_type)])
+                valid_actions.append([x1, y1, action_tuple_to_index(x2, y2, ACTION_TYPES[action.get('actionType')], building_type)])
             elif action.get('actionType') == 'SPAWN':
                 unit_type = UNIT_TYPES[action.get('unit_type')]
-                valid_actions.append([x1, y1, x2, y2, action_tuple_to_index(ACTION_TYPES[action.get('actionType')], unit_type)])
+                # Assumption: Spawn is always to the same position as the city
+                valid_actions.append([x1, y1, action_tuple_to_index(MASK, MASK, ACTION_TYPES[action.get('actionType')], unit_type)])
             elif action.get('actionType') == 'LEVEL_UP':
                 bonus_type = BONUS_TYPES[action.get('bonus')]
-                valid_actions.append([x1, y1, MASK, MASK, action_tuple_to_index(ACTION_TYPES[action.get('actionType')], bonus_type)])
+                valid_actions.append([x1, y1, action_tuple_to_index(MASK, MASK, ACTION_TYPES[action.get('actionType')], bonus_type)])
             else:
-                valid_actions.append([x1, y1, x2, y2, action_tuple_to_index(ACTION_TYPES[action.get('actionType')], MASK)])
+                valid_actions.append([x1, y1, action_tuple_to_index(x2, y2, ACTION_TYPES[action.get('actionType')], MASK)])
 
     unit_actions = gs.get('unitActions', {})
     # print("unit_actions")
@@ -275,9 +318,9 @@ def filter_actions(gs):
 
             elif action.get('actionType') in ['CAPTURE', 'RECOVER', 'EXAMINE', 'MAKE_VETERAN', 'DISBAND', 'UPGRADE_BOAT', 'UPGRADE_SHIP']:
                 # Assumption: These are always to the same position as the unit
-                x2, y2 = x1, y1
+                x2, y2 = MASK, MASK
 
-            valid_actions.append([x1, y1, x2, y2, action_tuple_to_index(ACTION_TYPES[action.get('actionType')], MASK)])
+            valid_actions.append([x1, y1, action_tuple_to_index(x2, y2, ACTION_TYPES[action.get('actionType')], MASK)])
 
     # ensure its a tensor
     return valid_actions
