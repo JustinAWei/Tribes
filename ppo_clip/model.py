@@ -111,7 +111,13 @@ class PPOClipAgent:
 
         self._batch_size = 1000
         self._epochs = 10
-        self._trajectories = torch.tensor([])
+        self._trajectories = {
+            # "observations": torch.empty((0, 1), dtype=torch.float),
+            "actions": torch.empty((0, 6), dtype=torch.long),  # Assuming actions have shape [6]
+            "rewards": torch.empty((0, 1), dtype=torch.float),  # Assuming rewards are scalar
+            "probs": torch.empty((0, 1), dtype=torch.float),  # Assuming probs are scalar
+            "masks": torch.empty((0, 1), dtype=torch.float)  # Assuming masks are scalar
+        }
         self._counter = 0
 
     def to(self, device):
@@ -129,20 +135,22 @@ class PPOClipAgent:
         self._counter += 1
 
         # Collect trajectory
-        actions, rewards, probs, mask = self.get_action([game_state], [valid_actions])
-        self._trajectories = torch.stack((
-            torch.tensor(actions),
-            torch.tensor(rewards),
-            probs,
-            mask
-        ), dim=0)
+        actions, rewards, probs, masks = self.get_action([game_state], [valid_actions])
+        # Stack into trajectories
+        self._trajectories = {
+            # "observations": torch.stack((self._trajectories["observations"], game_state), dim=0),
+            "actions": torch.stack((self._trajectories["actions"], actions), dim=0),
+            "rewards": torch.stack((self._trajectories["rewards"], rewards), dim=0),
+            "probs": torch.stack((self._trajectories["probs"], probs), dim=0),
+            "masks": torch.stack((self._trajectories["masks"], masks), dim=0)
+        }
 
         print("\n=== Trajectory Shapes ===")
-        print("game_state shape:", self._trajectories[0].shape)
-        print("actions shape:", self._trajectories[1].shape) 
-        print("rewards shape:", self._trajectories[2].shape)
-        print("probs shape:", self._trajectories[3].shape)
-        print("mask shape:", self._trajectories[4].shape)
+        # print("game_state shape:", self._trajectories["observations"].shape)
+        print("actions shape:", self._trajectories["actions"].shape) 
+        print("rewards shape:", self._trajectories["rewards"].shape)
+        print("probs shape:", self._trajectories["probs"].shape)
+        print("mask shape:", self._trajectories["masks"].shape)
         
         if self._counter % self._batch_size == 0:
             new_log_probs = self._update(game_state, valid_actions, old_log_probs)
