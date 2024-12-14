@@ -23,14 +23,14 @@ def filter_actions(gs):
 
     # this is just a list
     tribe_actions = gs.get('tribeActions', [])
-    print("tribe_actions")
-    print(tribe_actions)
+    # print("tribe_actions")
+    # print(tribe_actions)
     filtered_tribe_actions = [
         action for action in tribe_actions
         if action.get('actionType') in allowed_action_types
     ]
-    print("filtered_tribe_actions")
-    print(filtered_tribe_actions)
+    # print("filtered_tribe_actions")
+    # print(filtered_tribe_actions)
     for action in filtered_tribe_actions:
         if action.get('actionType') == 'RESEARCH_TECH':
             tech_type = TECH_TYPES[action.get('tech')]
@@ -46,16 +46,16 @@ def filter_actions(gs):
     # List to store filtered city actions
     filtered_city_actions = []
     city_actions = gs.get('cityActions', {})
-    print("city_actions")
-    print(city_actions)
+    # print("city_actions")
+    # print(city_actions)
     for city_id, actions in city_actions.items():
         # Filter actions for this city
         filtered_city_actions = [
             action for action in actions
             if action.get('actionType') in allowed_action_types
         ]
-        print('city_id', 'filtered_city_actions')
-        print(city_id, filtered_city_actions)
+        # print('city_id', 'filtered_city_actions')
+        # print(city_id, filtered_city_actions)
         for action in filtered_city_actions:
             x2, y2 = MASK, MASK
             if 'targetPos' in action:
@@ -77,16 +77,16 @@ def filter_actions(gs):
                 valid_actions.append([ACTION_TYPES[action.get('actionType')], x1, y1, x2, y2, MASK])
 
     unit_actions = gs.get('unitActions', {})
-    print("unit_actions")
-    print(unit_actions)
+    # print("unit_actions")
+    # print(unit_actions)
     for unit_id, actions in unit_actions.items():
         # Filter actions for this city
         filtered_unit_actions = [
             action for action in actions
             if action.get('actionType') in allowed_action_types
         ]
-        print('unit_id', 'filtered_unit_actions')
-        print(unit_id, filtered_unit_actions)
+        # print('unit_id', 'filtered_unit_actions')
+        # print(unit_id, filtered_unit_actions)
         for action in filtered_unit_actions:
             x1, y1 = get_actor_x_y(int(unit_id), gs)
 

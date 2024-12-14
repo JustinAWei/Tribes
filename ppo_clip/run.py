@@ -33,7 +33,7 @@ async def receive_data(request: Request):
         valid_actions = filter_actions(gs)
         
         action = agent.run(0, gs, valid_actions)
-        print("Action: ", action)
+        # print("Action: ", action)
 
         return {
             "status": 200, 
