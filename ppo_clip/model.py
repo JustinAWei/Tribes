@@ -189,7 +189,7 @@ class PPOClipAgent:
             new_log_probs = self._update(spatial_tensor, global_info, masks, old_log_probs)
             old_log_probs = new_log_probs
 
-        return actions
+        return actions[0].tolist()
 
     def advantage(self, rewards, values, dones, gamma=0.99, lambda_=0.95):
         """
