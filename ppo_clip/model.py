@@ -10,7 +10,7 @@ from torch import optim
 import math
 from vectorize_game_state import game_state_to_vector
 from torch.distributions import Categorical
-
+from utils import timing_decorator
 # To reduce duplicate code, this is used for both the actor and the critic
 # NOTE: we are not batching the input for now
 class FeatureExtractor(nn.Module):
@@ -33,6 +33,7 @@ class FeatureExtractor(nn.Module):
             nn.ReLU()
         )
         
+    @timing_decorator
     def forward(self, spatial, global_features):
         print("=== Feature Extractor Forward ===")
         # Rearrange spatial for CNN
@@ -67,6 +68,7 @@ class Actor(nn.Module):
             nn.Linear(128, flat_output_size)
         )
 
+    @timing_decorator
     def forward(self, spatial, global_features):
         print("=== Actor Forward ===")
         combined = self.feature_extractor(spatial, global_features)
@@ -90,6 +92,7 @@ class Critic(nn.Module):
             nn.Linear(64, 1)  # Output a single value
         )
 
+    @timing_decorator
     def forward(self, spatial, global_features):
         print("=== Critic Forward ===")
         combined = self.feature_extractor(spatial, global_features)
@@ -110,7 +113,7 @@ class PPOClipAgent:
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
         self.epsilon = 0.2
-        self._batch_size = 128
+        self._batch_size = 4096
         self._epochs = 2
         self._base_trajectories = {
             "spatial_tensor": torch.empty((0, BOARD_LEN, BOARD_LEN, 27), dtype=torch.float),
@@ -133,6 +136,7 @@ class PPOClipAgent:
         self.device = device
         return self
         
+    @timing_decorator
     def run(self, id, game_state, valid_actions):
         self._counter += 1
 
@@ -195,6 +199,7 @@ class PPOClipAgent:
 
         return actions[0].tolist()
 
+    @timing_decorator
     def advantage(self, rewards, values, dones, gamma=0.99, lambda_=0.95):
         """
         Calculate advantage using Generalized Advantage Estimation (GAE)
@@ -234,6 +239,7 @@ class PPOClipAgent:
         returns = advantages + values
         return returns, advantages
 
+    @timing_decorator
     def _update(self):
         print("=== Update ===")
 
@@ -318,6 +324,7 @@ class PPOClipAgent:
 
         return new_log_probs
 
+    @timing_decorator
     def get_action(self, spatial_tensor, global_info, masks):
 
         # Get action logits from actor network

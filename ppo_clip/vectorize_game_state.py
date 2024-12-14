@@ -1,5 +1,6 @@
 import json
 import torch
+from utils import timing_decorator
 
 # Constants for mapping strings to integers
 TERRAIN_MAP = {
@@ -36,6 +37,7 @@ UNIT_TYPE_MAP = {
     'BOAT': 8, 'SHIP': 9, 'BATTLESHIP': 10, 'SUPERUNIT': 11
 }
 
+@timing_decorator
 def game_state_to_vector(gs_list):
     """
     Vectorize a batch of game states into tensors.
