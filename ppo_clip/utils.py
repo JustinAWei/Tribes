@@ -246,14 +246,10 @@ def reward_fn(gs):
     reward = 0
     active_tribe_id = gs['board']['activeTribeID']
 
-    # TODO: use this when we send the game state on end
-    # which tribe is the winner?
     tribes = gs['board']['tribes']
     for tribe in tribes:
-        # print("tribe", tribe)
         if tribe['actorId'] == active_tribe_id: 
-            # print("active_tribe_id", active_tribe_id)
-            # print("winner", tribe['winner'])
+            # TODO: Actually send the final game state on end!
             if tribe['winner'] == "WIN":
                 reward = 1
             elif tribe['winner'] == "LOSE":
