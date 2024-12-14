@@ -58,21 +58,17 @@ public class PPOAgent extends Agent {
         System.out.println(jsonArray);
 
         // Turn the tensor into an action item
-//        Integer category = (Integer) jsonArray.get(0);
-        // first, switch on Tribe, City, Unit action
 
-        // then, get the action
-        Integer actionId = (Integer) jsonArray.get(0);
+        // then, get the right param based on x,y
+        Integer x1 = (Integer) jsonArray.get(0);
+        Integer y1 = (Integer) jsonArray.get(1);
+
+        // then, get the right param based on x,y
+        Integer x2 = (Integer) jsonArray.get(2);
+        Integer y2 = (Integer) jsonArray.get(3);
+
+        Integer actionId = (Integer) jsonArray.get(4);
         Types.ACTION actionType = Types.ACTION.values()[actionId];
-
-
-        // then, get the right param based on x,y
-        Integer x1 = (Integer) jsonArray.get(1);
-        Integer y1 = (Integer) jsonArray.get(2);
-
-        // then, get the right param based on x,y
-        Integer x2 = (Integer) jsonArray.get(3);
-        Integer y2 = (Integer) jsonArray.get(4);
 
         int typeInfo = (Integer) jsonArray.get(5);
 

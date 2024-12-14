@@ -171,7 +171,7 @@ class PPOClipAgent:
             for action in actions:
                 # print("action:", action)
                 # Set corresponding position in mask to 0 to allow this action
-                masks[batch_idx][action[0]][action[1]][action[2]][action[3]][action[4]][action[5]] = 0
+                masks[batch_idx][action[0]][action[1]][action[2]][action[3]][action[4]] = 0
 
         # compute rewards
         rewards = torch.tensor([[reward_fn(game_state) for game_state in [game_state]]])

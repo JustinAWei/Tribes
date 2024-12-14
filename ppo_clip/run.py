@@ -2,12 +2,14 @@ from fastapi import FastAPI, Request
 import uvicorn
 import json
 
-from utils import ACTION_CATEGORIES, ACTION_TYPES, MAX_EXTRA_VARS, filter_actions
+from utils import filter_actions, action_tuples, index_to_action_tuple
 from model import PPOClipAgent
 from utils import BOARD_LEN
 
 game_state_shape = (BOARD_LEN, BOARD_LEN, 27)
-action_space_shape = (max(ACTION_TYPES.values()), BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, MAX_EXTRA_VARS)
+action_space_shape = (BOARD_LEN, BOARD_LEN, BOARD_LEN, BOARD_LEN, len(action_tuples))
+
+print(action_space_shape)
 
 agent = PPOClipAgent(game_state_shape, action_space_shape)
 
@@ -35,9 +37,16 @@ async def receive_data(request: Request):
         action = agent.run(0, gs, valid_actions)
         # print("Action: ", action)
 
+        # convert last action to (action_type, extra_var)
+        action_type, extra_var = index_to_action_tuple(action[-1])
+        print("Action Type: ", action_type)
+        print("Extra Var: ", extra_var)
+
+        unpacked_action = [action[0], action[1], action[2], action[3], action_type, extra_var]
+
         return {
             "status": 200, 
-            "action": action
+            "action": unpacked_action
         }
 
     except Exception as e:
