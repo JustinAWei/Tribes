@@ -41,17 +41,15 @@ async def receive_data(request: Request):
         # if tick is 0, give a new current_game_id
         if gs['tick'] == 0 and current_tick != 0:
             if current_game_id in action_type_stats:
-                print("Game Ended", current_game_id)
+                print("Game Ended", current_game_id, "|", current_tick)
                 print("Action Type Stats: ", action_type_stats[current_game_id])
                 # ACTION_TYPES is a dictionary of text to index, i want to print the text corresponding to the stats
+
                 for action_type, index in ACTION_TYPES.items():
                     print(f"{action_type}: {action_type_stats[current_game_id].get(index, 0)}")
 
-            # timestamp
             current_game_id = current_game_id + 1
             action_type_stats[current_game_id] = {}
-
-            print("New game started", current_game_id)
 
         current_tick = gs['tick']
 
