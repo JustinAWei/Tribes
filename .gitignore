@@ -15,3 +15,4 @@ test/
 map/
 map_elites_*
 __pycache__/
+ppo_clip/runs/
