@@ -19,6 +19,8 @@ import utils.file.IO;
 
 public class GameState {
 
+    private int gameId = 0;
+
     //Game mode
     private Types.GAME_MODE gameMode;
 
@@ -60,6 +62,7 @@ public class GameState {
 
     //Constructor.
     public GameState(Random rnd, Types.GAME_MODE gameMode) {
+        this.gameId = rnd.nextInt();
         this.rnd = rnd;
         this.gameMode = gameMode;
         computedActionTribeIdFlag = -1;

@@ -265,7 +265,7 @@ def reward_fn(gs):
 
     return reward
 
-@timing_decorator
+
 def filter_actions(gs):
     valid_actions = []
 

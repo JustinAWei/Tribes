@@ -37,7 +37,7 @@ UNIT_TYPE_MAP = {
     'BOAT': 8, 'SHIP': 9, 'BATTLESHIP': 10, 'SUPERUNIT': 11
 }
 
-@timing_decorator
+# @timing_decorator
 # @profile
 def game_state_to_vector(gs_list, device):
     """

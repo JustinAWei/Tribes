@@ -43,7 +43,7 @@ class FeatureExtractor(nn.Module):
             nn.ReLU()
         )
         
-    @timing_decorator
+    
     def forward(self, spatial, global_features):
         # print("=== Feature Extractor Forward ===")
         # Rearrange spatial for CNN
@@ -79,7 +79,7 @@ class Actor(nn.Module):
             nn.Linear(16, flat_output_size)
         )
 
-    @timing_decorator
+    
     def forward(self, spatial, global_features):
         # Ensure inputs are on GPU
         spatial = spatial.to(self.device)
@@ -108,7 +108,7 @@ class Critic(nn.Module):
             nn.Linear(16, 1)  # Output a single value
         )
 
-    @timing_decorator
+    
     def forward(self, spatial, global_features):
         # Ensure inputs are on GPU
         spatial = spatial.to(self.device)
@@ -135,8 +135,8 @@ class PPOClipAgent:
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
         self.epsilon = 0.2
-        self._batch_size = 200
-        self._epochs = 2
+        self._batch_size = 2048
+        self._epochs = 1
 #         self._base_trajectories = {
 #             "spatial_tensor": torch.empty((0, BOARD_LEN, BOARD_LEN, 27), dtype=torch.float),
 #             "global_info": torch.empty((0, 2), dtype=torch.float),
@@ -157,7 +157,7 @@ class PPOClipAgent:
         self._trajectories = copy.deepcopy(self._base_trajectories)
         self._counter = 0
         
-    @timing_decorator
+    
     # @profile
     def run(self, id, game_state, valid_actions):
         self._counter += 1
@@ -223,14 +223,14 @@ class PPOClipAgent:
         # print("probs shape:", self._trajectories["probs"].shape)
         # print("mask shape:", self._trajectories["masks"].shape)
 
-        if self._counter % 100 == 0:
-            print("=== Trajectory Shapes ===")
-            print("spatial_tensor shape:", len(self._trajectories["spatial_tensor"]), self._trajectories["spatial_tensor"][0].shape)
-            print("global_info shape:", len(self._trajectories["global_info"]), self._trajectories["global_info"][0].shape)
-            print("actions shape:", len(self._trajectories["actions"]), self._trajectories["actions"][0].shape) 
-            print("rewards shape:", len(self._trajectories["rewards"]), self._trajectories["rewards"][0].shape)
-            print("probs shape:", len(self._trajectories["probs"]), self._trajectories["probs"][0].shape)
-            print("mask shape:", len(self._trajectories["masks"]), self._trajectories["masks"][0].shape)
+        # if self._counter % 100 == 0:
+        #     print("=== Trajectory Shapes ===")
+        #     print("spatial_tensor shape:", len(self._trajectories["spatial_tensor"]), self._trajectories["spatial_tensor"][0].shape)
+        #     print("global_info shape:", len(self._trajectories["global_info"]), self._trajectories["global_info"][0].shape)
+        #     print("actions shape:", len(self._trajectories["actions"]), self._trajectories["actions"][0].shape) 
+        #     print("rewards shape:", len(self._trajectories["rewards"]), self._trajectories["rewards"][0].shape)
+        #     print("probs shape:", len(self._trajectories["probs"]), self._trajectories["probs"][0].shape)
+        #     print("mask shape:", len(self._trajectories["masks"]), self._trajectories["masks"][0].shape)
         
         if self._counter % self._batch_size == 0:
             self._update()
@@ -238,7 +238,7 @@ class PPOClipAgent:
 
         return actions[0].tolist()
 
-    @timing_decorator
+    
     def advantage(self, rewards, values, dones, gamma=0.99, lambda_=0.95):
         """
         Calculate advantage using Generalized Advantage Estimation (GAE)
@@ -278,7 +278,7 @@ class PPOClipAgent:
         returns = advantages + values
         return returns, advantages
 
-    @timing_decorator
+    
     # @profile
     def _update(self):
 #         remote_update = modal.Function.lookup("ppo_clip_update", "remote_update")
@@ -391,7 +391,7 @@ class PPOClipAgent:
 
         return new_log_probs
 
-    @timing_decorator
+    
     # @profile
     def get_action(self, spatial_tensor, global_info, masks):
         try:

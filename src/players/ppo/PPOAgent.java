@@ -55,7 +55,7 @@ public class PPOAgent extends Agent {
 
         // turn into array
         JSONArray jsonArray = (JSONArray) jsonResponse.get("action");
-        System.out.println(jsonArray);
+        // System.out.println(jsonArray);
 
         // Turn the tensor into an action item
 
@@ -179,7 +179,7 @@ public class PPOAgent extends Agent {
             }
         }
 
-        System.out.println(filteredActions);
+        // System.out.println(filteredActions);
 
         return filteredActions.getFirst();
     }
