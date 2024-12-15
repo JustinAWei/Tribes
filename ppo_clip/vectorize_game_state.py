@@ -258,8 +258,6 @@ def _process_single_game_state(gs, device):
                              for row in gs['board']['buildings']], 
                             dtype=torch.int32, 
                             device=device)
-    unit_array = torch.full((board_size, board_size, 13), -1, dtype=torch.int32).to(device)  # -1 for no unit
-    city_array = torch.full((board_size, board_size, 10), -1, dtype=torch.int32).to(device)   # -1 for no city
     trade_network = (torch.tensor(gs['board']['tradeNetwork']['networkTiles'], 
                             dtype=torch.int32, 
                             device=device).reshape(board_size, board_size, 1) 
@@ -268,70 +266,75 @@ def _process_single_game_state(gs, device):
                                 dtype=torch.int32, 
                                 device=device))
 
-    # Fill unit array
+    # Create a dictionary mapping unit_id to its attributes
     game_actors = gs['board']['gameActors']
-    for y, row in enumerate(gs['board']['units']):
-        for x, unit_id in enumerate(row):
-            if unit_id != 0 and str(unit_id) in game_actors:
-                unit = game_actors[str(unit_id)]
-                if 'ATK' in unit:  # Make sure it's actually a unit
-                    # Get unit position from the city actor
-                    city_pos_x = -1
-                    city_pos_y = -1
-                    if 'cityId' in unit and str(unit['cityId']) in game_actors:
-                        city = game_actors[str(unit['cityId'])]
-                        if 'position' in city:
-                            city_pos_x = city['position'].get('x', -1)
-                            city_pos_y = city['position'].get('y', -1)
-                    
-                    # Convert status string to int
-                    status_str = unit.get('status', 'FRESH')
-                    status_int = UNIT_STATUS_MAP.get(status_str, 0)
+    unit_data = {
+        int(uid): {
+            'ATK': unit.get('ATK', -1),
+            'DEF': unit.get('DEF', -1),
+            'MOV': unit.get('MOV', -1),
+            'RANGE': unit.get('RANGE', -1),
+            'maxHP': unit.get('maxHP', -1),
+            'currentHP': unit.get('currentHP', -1),
+            'kills': unit.get('kills', -1),
+            'isVeteran': 1 if unit.get('isVeteran', False) else 0,
+            'city_pos_x': game_actors[str(unit['cityId'])]['position'].get('x', -1) if 'cityId' in unit and str(unit['cityId']) in game_actors else -1,
+            'city_pos_y': game_actors[str(unit['cityId'])]['position'].get('y', -1) if 'cityId' in unit and str(unit['cityId']) in game_actors else -1,
+            'status': UNIT_STATUS_MAP.get(unit.get('status', 'FRESH'), 0),
+            'tribeId': unit.get('tribeId', -1),
+            'baseLandUnit': UNIT_TYPE_MAP.get(unit.get('baseLandUnit'), -1) if unit.get('baseLandUnit') is not None else -1
+        }
+        for uid, unit in gs['board']['gameActors'].items()
+        if isinstance(uid, str) and 'ATK' in unit
+    }
 
-                    # Get base land unit if it's a water unit otherwise -1
-                    base_land_unit_str = unit.get('baseLandUnit', None)
-                    base_land_unit_int = UNIT_TYPE_MAP.get(base_land_unit_str, -1) if base_land_unit_str is not None else -1
-                    
-                    # print('unit info', unit, city_pos_x, city_pos_y, status_int, base_land_unit_str)
-                    unit_array[y, x] = torch.tensor([
-                        unit.get('ATK', -1),
-                        unit.get('DEF', -1),
-                        unit.get('MOV', -1),
-                        unit.get('RANGE', -1),
-                        unit.get('maxHP', -1),
-                        unit.get('currentHP', -1),
-                        unit.get('kills', -1),
-                        1 if unit.get('isVeteran', False) else 0,
-                        city_pos_x,
-                        city_pos_y,
-                        status_int,
-                        unit.get('tribeId', -1),
-                        base_land_unit_int
-                    ], dtype=torch.int32)
+    # Create the unit array in one go
+    unit_array = torch.tensor([
+        [
+            list(unit_data.get(unit_id, {
+                'ATK': -1, 'DEF': -1, 'MOV': -1, 'RANGE': -1,
+                'maxHP': -1, 'currentHP': -1, 'kills': -1,
+                'isVeteran': 0, 'city_pos_x': -1, 'city_pos_y': -1,
+                'status': 0, 'tribeId': -1, 'baseLandUnit': -1
+            }).values())
+            for unit_id in row
+        ]
+        for row in gs['board']['units']
+    ], dtype=torch.int32, device=device)
 
-    # Fill city array and tile ownership
-    for y, row in enumerate(gs['board']['tileCityId']):
-        for x, city_id in enumerate(row):
-            if city_id > 0 and str(city_id) in game_actors:
-                city = game_actors[str(city_id)]
-                if 'level' in city:  # Check if it's actually a city
-                    # print('city info', city)
-                    # Grab city's center position
-                    city_pos_x = city.get('position', {}).get('x', -1)
-                    city_pos_y = city.get('position', {}).get('y', -1)
+    # Create a dictionary mapping city_id to its attributes
+    city_data = {
+        int(cid): {
+            'level': city.get('level', -1),
+            'population': city.get('population', -1),
+            'population_need': city.get('population_need', -1),
+            'is_capital': 1 if city.get('isCapital', False) else 0,
+            'production': city.get('production', -1),
+            'has_walls': 1 if city.get('hasWalls', False) else 0,
+            'bound': city.get('bound', -1),
+            'tribe_id': city.get('tribeId', -1),
+            'pos_x': city.get('position', {}).get('x', -1),
+            'pos_y': city.get('position', {}).get('y', -1)
+        }
+        for cid, city in gs['board']['gameActors'].items()
+        if isinstance(cid, str) and 'level' in city
+    }
 
-                    city_array[y, x] = torch.tensor([
-                        city.get('level', -1),
-                        city.get('population', -1),
-                        city.get('population_need', -1),
-                        1 if city.get('isCapital', False) else 0,
-                        city.get('production', -1),
-                        1 if city.get('hasWalls', False) else 0,
-                        city.get('bound', -1),
-                        city.get('tribeId', -1),
-                        city_pos_x,
-                        city_pos_y
-                    ], dtype=torch.int32).to(device)
+    # Create the city array in one go
+    board_size = len(gs['board']['terrains'])
+    tile_city_ids = gs['board']['tileCityId']
+    
+    city_array = torch.tensor([
+        [
+            list(city_data.get(tile_city_ids[y][x], {
+                'level': -1, 'population': -1, 'population_need': -1,
+                'is_capital': 0, 'production': -1, 'has_walls': 0,
+                'bound': -1, 'tribe_id': -1, 'pos_x': -1, 'pos_y': -1
+            }).values())
+            for x in range(board_size)
+        ]
+        for y in range(board_size)
+    ], dtype=torch.int32, device=device)
 
     # Combine all arrays into final tensor
     spatial_tensor = torch.cat([
