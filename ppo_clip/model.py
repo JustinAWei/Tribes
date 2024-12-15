@@ -15,6 +15,8 @@ from utils import timing_decorator, serialize_trajectories
 from modal_functions.update import remote_update
 import requests
 import modal
+from torch.utils.tensorboard import SummaryWriter
+import time
 
 # Endpoint for the update function
 url = "https://kev2010--ppo-clip-update-trigger-update.modal.run"
@@ -152,6 +154,10 @@ class PPOClipAgent:
         }
         self._trajectories = copy.deepcopy(self._base_trajectories)
         self._counter = 0
+
+        # Tracking information
+        self.writer = SummaryWriter(f'ppo_clip/runs/ppo_clip_{time.strftime("%Y%m%d-%H%M%S")}')
+        self.update_count = 0
         
     
     # @profile
@@ -323,7 +329,7 @@ class PPOClipAgent:
         old_log_probs = dist.log_prob(flat_actions)
         # print("old_log_probs shape:", old_log_probs.shape)
 
-        for i in range(self._epochs):
+        for _ in range(self._epochs):
             # print("=== Epoch", i, "===")
 
             values = self._critic.forward(spatial_tensor, global_info)
@@ -385,6 +391,15 @@ class PPOClipAgent:
             loss.backward()
             self.critic_optimizer.step()
 
+            self._log_training_metrics(
+                actor_loss=actor_loss,
+                critic_loss=loss,
+                ratio=ratio,
+                advantages=advantages,
+                values=values,
+                rewards_to_go=rewards_to_go
+            )
+
         return new_log_probs
 
     
@@ -435,3 +450,36 @@ class PPOClipAgent:
             print(f"Masks shape: {masks.shape}")
             print(f"Flat indices: {flat_indices}")
             print(f"Actor output size: {self._actor.output_size}")
+    
+    def _log_training_metrics(self, actor_loss, critic_loss, ratio, advantages, values, rewards_to_go):
+        """
+        Log training metrics to TensorBoard.
+        
+        Args:
+            actor_loss (torch.Tensor): The actor's loss value
+            critic_loss (torch.Tensor): The critic's loss value
+            ratio (torch.Tensor): The policy ratio
+            advantages (torch.Tensor): The calculated advantages
+            values (torch.Tensor): The predicted values
+            rewards_to_go (torch.Tensor): The calculated returns
+        """
+        # Log losses
+        self.writer.add_scalar('Loss/actor', actor_loss.item(), self.update_count)
+        self.writer.add_scalar('Loss/critic', critic_loss.item(), self.update_count)
+        
+        # Log gradients
+        for name, param in self._actor.named_parameters():
+            if param.grad is not None:
+                self.writer.add_histogram(f'Gradients/actor_{name}', param.grad, self.update_count)
+        
+        for name, param in self._critic.named_parameters():
+            if param.grad is not None:
+                self.writer.add_histogram(f'Gradients/critic_{name}', param.grad, self.update_count)
+
+        # Log other useful metrics
+        self.writer.add_scalar('Policy/ratio', ratio.mean().item(), self.update_count)
+        self.writer.add_scalar('Policy/advantages', advantages.mean().item(), self.update_count)
+        self.writer.add_scalar('Values/predicted', values.mean().item(), self.update_count)
+        self.writer.add_scalar('Values/returns', rewards_to_go.mean().item(), self.update_count)
+
+        self.update_count += 1
