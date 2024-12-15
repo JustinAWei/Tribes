@@ -135,17 +135,13 @@ class PPOClipAgent:
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
         self.epsilon = 0.2
-        self._batch_size = 2048
-        self._epochs = 1
-#         self._base_trajectories = {
-#             "spatial_tensor": torch.empty((0, BOARD_LEN, BOARD_LEN, 27), dtype=torch.float),
-#             "global_info": torch.empty((0, 2), dtype=torch.float),
-# 
-#             "actions": torch.empty((0, 6), dtype=torch.long),  # [batch_size, action_dims] from actions shape: torch.Size([B, num_dimensions])
-#             "rewards": torch.empty((0, 1), dtype=torch.float),   # [batch_size] from rewards shape: torch.Size([1])
-#             "probs": torch.empty((0, np.prod(self.output_size)), dtype=torch.float),  # [batch_size, flattened_action_space] from probs shape shown in get_action()
-#             "masks": torch.empty((0, *self.output_size), dtype=torch.float)  # [batch_size, *output_size] from mask shape: torch.Size([1, *output_size])
-#         }
+        self._batch_size = 200
+        self._epochs = 2
+        self.multipliers = torch.tensor([
+            np.prod(self.output_size[i+1:]) 
+            for i in range(len(self.output_size))
+        ], device=self.device, dtype=torch.float32)
+
         self._base_trajectories = {
             "spatial_tensor": [],
             "global_info": [],
@@ -427,22 +423,12 @@ class PPOClipAgent:
             #     dim=1
             # )  # Shape: [B, num_dimensions]
             # Convert flat indices to multi-dimensional indices using pure PyTorch
-            multipliers = torch.tensor([
-                np.prod(self._actor.output_size[i+1:]) 
-                for i in range(len(self._actor.output_size))
-            ], device=self.device, dtype=torch.float32)
-            
-            actions = torch.zeros((flat_indices.size(0), len(self._actor.output_size)), 
-                                dtype=torch.long, device=self.device)
-            
-            remaining = flat_indices
-            for i, mult in enumerate(multipliers):
-                actions[:, i] = remaining // mult
-                remaining = remaining % mult
+            actions = (flat_indices.unsqueeze(1) // self.multipliers) % torch.tensor(
+                self.output_size, device=self.device
+            )
 
-                # print("actions shape:", actions.shape)
-
-            return actions, probs
+            return actions.long(), probs
+        
         except Exception as e:
             print(f"Error in get_action: {e}")
             print(f"Logits shape: {logits.shape}")
