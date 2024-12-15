@@ -254,14 +254,14 @@ def reward_fn(gs):
                 reward = 1
             elif tribe['winner'] == "LOSE":
                 reward = -1
-            else:
-                ranking = gs['ranking']
-                for tribe in ranking:
-                    if tribe['id'] == active_tribe_id:
-                        # Note: this should be between 0 and 1
-                        # Max techs < 100, max num cities < board size ^ 2, max production < 1000
-                        max_intermediate_rewards = 100 + BOARD_LEN ** 2 + 1000
-                        reward = (tribe['numTechsResearched'] + tribe['numCities'] + tribe['production']) / max_intermediate_rewards
+            # else:
+            #     ranking = gs['ranking']
+            #     for tribe in ranking:
+            #         if tribe['id'] == active_tribe_id:
+            #             # Note: this should be between 0 and 1
+            #             # Max techs < 100, max num cities < board size ^ 2, max production < 1000
+            #             max_intermediate_rewards = 100 + BOARD_LEN ** 2 + 1000
+            #             reward = (tribe['numTechsResearched'] + tribe['numCities'] + tribe['production']) / max_intermediate_rewards
 
     return reward
 
