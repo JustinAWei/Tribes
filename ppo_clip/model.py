@@ -18,6 +18,7 @@ import requests
 import modal
 from torch.utils.tensorboard import SummaryWriter
 import time
+import json
 
 # Endpoint for the update function
 url = "https://kev2010--ppo-clip-update-trigger-update.modal.run"
@@ -136,14 +137,15 @@ class PPOClipAgent:
         self._actor = Actor(BOARD_LEN, self.output_size).to(self.device)
         self._critic = Critic(BOARD_LEN).to(self.device).to(self.device)
 
-        lr = 0.0001
+        self._learning_rate = 0.0001
 
-        self.actor_optimizer = optim.Adam(self._actor.parameters(), lr=lr)
-        self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
+        self._actor_optimizer = optim.Adam(self._actor.parameters(), lr=self._learning_rate)
+        self._critic_optimizer = optim.Adam(self._critic.parameters(), lr=self._learning_rate)
 
-        self.epsilon = 0.2
+        self._clip_ratio = 0.2
         self._batch_size = 2048
-        self._epochs = 3
+        self._n_epochs = 3
+
         self.multipliers = torch.tensor([
             np.prod(self.output_size[i+1:]) 
             for i in range(len(self.output_size))
@@ -165,27 +167,63 @@ class PPOClipAgent:
         self.update_count = 0
         
     def save_weights(self):
-        """Save actor and critic model weights to files
-        
-        Args:
-            path (str, optional): Path to save weights to. If None, uses default path.
-        """
-        print(f"Saving model weights to {self._save_path}")
+        """Save actor and critic model weights, optimizer states, and hyperparameters to files"""
+        print(f"Saving model data to {self._save_path}")
         save_dir = f"{self._save_path}/{self._counter}"
         os.makedirs(save_dir, exist_ok=True)
+        
+        # Save model weights
         torch.save(self._actor.state_dict(), f"{save_dir}/actor.pth")
-        torch.save(self._critic.state_dict(), f"{save_dir}/critic.pth") 
-        print(f"Saved model weights to {self._save_path}")
+        torch.save(self._critic.state_dict(), f"{save_dir}/critic.pth")
+        
+        # Save optimizer states
+        torch.save(self._actor_optimizer.state_dict(), f"{save_dir}/actor_optimizer.pth")
+        torch.save(self._critic_optimizer.state_dict(), f"{save_dir}/critic_optimizer.pth")
+        
+        # Save hyperparameters
+        hyperparams = {
+            'learning_rate': self._learning_rate,
+            'clip_ratio': self._clip_ratio,
+            'batch_size': self._batch_size,
+            'n_epochs': self._n_epochs,
+            # Add any other hyperparameters you want to save
+        }
+        
+        with open(f"{save_dir}/hyperparams.json", 'w') as f:
+            json.dump(hyperparams, f, indent=4)
+        
+        print(f"Saved model data to {save_dir}")
 
     def load_weights(self):
-        """Load actor and critic model weights from files"""
+        """Load actor and critic model weights, optimizer states, and hyperparameters from files"""
         try:
-            print(f"Loading model weights from {self._load_path}")
+            print(f"Loading model data from {self._load_path}")
+            
+            # Load model weights
             self._actor.load_state_dict(torch.load(f"{self._load_path}/actor.pth", map_location=self.device))
             self._critic.load_state_dict(torch.load(f"{self._load_path}/critic.pth", map_location=self.device))
-            print(f"Loaded model weights from {self._load_path}")
+            
+            # Load optimizer states
+            self._actor_optimizer.load_state_dict(torch.load(f"{self._load_path}/actor_optimizer.pth", map_location=self.device))
+            self._critic_optimizer.load_state_dict(torch.load(f"{self._load_path}/critic_optimizer.pth", map_location=self.device))
+            
+            # Load hyperparameters
+            with open(f"{self._load_path}/hyperparams.json", 'r') as f:
+                hyperparams = json.load(f)
+                
+            # Update instance variables with loaded hyperparameters
+            self._learning_rate = hyperparams['learning_rate']
+            self._clip_ratio = hyperparams['clip_ratio']
+            self._batch_size = hyperparams['batch_size']
+            self._n_epochs = hyperparams['n_epochs']
+            # Update any other hyperparameters you saved
+            
+            print(f"Loaded model data from {self._load_path}")
+            
         except FileNotFoundError as e:
-            print(f"Could not load weights from {self._load_path}: {e}")
+            print(f"Could not load data from {self._load_path}: {e}")
+        except json.JSONDecodeError as e:
+            print(f"Could not parse hyperparameters file: {e}")
     
     def game_ended(self, game_state):
         # who won
@@ -371,8 +409,8 @@ class PPOClipAgent:
 #             output_size=self.output_size,
 #             epochs=self._epochs,
 #             epsilon=self.epsilon,
-#             actor_optimizer=self.actor_optimizer.state_dict(),
-#             critic_optimizer=self.critic_optimizer.state_dict(),
+#             actor_optimizer=self._actor_optimizer.state_dict(),
+#             critic_optimizer=self._critic_optimizer.state_dict(),
 #             critic=self._critic.state_dict(),
 #             advantage=self.advantage,
 #             get_action=self.get_action
@@ -410,7 +448,7 @@ class PPOClipAgent:
         old_log_probs = dist.log_prob(flat_actions)
         # print("old_log_probs shape:", old_log_probs.shape)
 
-        for _ in range(self._epochs):
+        for _ in range(self._n_epochs):
             # print("=== Epoch", i, "===")
 
             values = self._critic.forward(spatial_tensor, global_info)
@@ -427,7 +465,7 @@ class PPOClipAgent:
 
 
             # print("\n=== Actor Update ===")
-            self.actor_optimizer.zero_grad()
+            self._actor_optimizer.zero_grad()
 
             # print("4. Computing action probabilities...")
 
@@ -453,16 +491,16 @@ class PPOClipAgent:
             # Ensure old_log_probs and new_log_probs have the same shape as advantages
             ratio = torch.exp(new_log_probs - old_log_probs.detach())
             surrogate1 = ratio * advantages
-            surrogate2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantages
+            surrogate2 = torch.clamp(ratio, 1 - self._clip_ratio, 1 + self._clip_ratio) * advantages
             actor_loss = -torch.min(surrogate1, surrogate2).mean()
 
             # print("7. Performing actor backprop...")
             actor_loss.backward()
-            self.actor_optimizer.step()
+            self._actor_optimizer.step()
 
             # print("\n=== Critic Update ===") 
             # print("1. Zeroing critic gradients...")
-            self.critic_optimizer.zero_grad()
+            self._critic_optimizer.zero_grad()
             
             # print("2. Computing critic loss...")
             criterion = nn.MSELoss()
@@ -470,7 +508,7 @@ class PPOClipAgent:
             
             # print("3. Performing critic backprop...")
             loss.backward()
-            self.critic_optimizer.step()
+            self._critic_optimizer.step()
 
             self._log_training_metrics(
                 actor_loss=actor_loss,
