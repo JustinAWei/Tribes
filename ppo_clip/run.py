@@ -37,8 +37,6 @@ async def receive_data(request: Request):
     # Extract request data
     data = await request.json()
 
-    print(".", end="", flush=True)
-
     try:
         # Parse game state
         gs = json.loads(data['gameState']) if isinstance(data['gameState'], str) else data['gameState']

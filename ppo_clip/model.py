@@ -251,7 +251,8 @@ class PPOClipAgent:
         # print("probs shape:", self._trajectories["probs"].shape)
         # print("mask shape:", self._trajectories["masks"].shape)
 
-        # if self._counter % 100 == 0:
+        if self._counter % 512 == 0:
+            print(self._counter)
         #     print("=== Trajectory Shapes ===")
         #     print("spatial_tensor shape:", len(self._trajectories["spatial_tensor"]), self._trajectories["spatial_tensor"][0].shape)
         #     print("global_info shape:", len(self._trajectories["global_info"]), self._trajectories["global_info"][0].shape)
@@ -261,8 +262,6 @@ class PPOClipAgent:
         #     print("mask shape:", len(self._trajectories["masks"]), self._trajectories["masks"][0].shape)
         
         if self._counter % self._batch_size == 0:
-            # TODO: Insert game winning or losing here.
-
             # Sort trajectories by tribe ID
 
             # Convert list of tensors to single tensor for easier manipulation
@@ -359,6 +358,9 @@ class PPOClipAgent:
         spatial_tensor = torch.cat(self._trajectories["spatial_tensor"], dim=0).to(self.device).float()
         global_info = torch.cat(self._trajectories["global_info"], dim=0).to(self.device).float()
         masks = torch.cat(self._trajectories["masks"], dim=0).to(self.device).float()
+
+        print(rewards)
+        print(dones)
 
         # print("actions shape:", actions.shape)
         # print("probs shape:", probs.shape)
