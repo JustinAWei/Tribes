@@ -121,10 +121,14 @@ class Critic(nn.Module):
         return self.value_head(combined)  # Output should be (batch_size, 1)
 
 class PPOClipAgent:
-    def __init__(self, input_size, output_size):
+    def __init__(self, load_path, save_path, input_size, output_size):
         self.device = DEVICE
         print(f"Using device: {self.device}")
         print("Initializing PPOClipAgent", output_size)
+
+        self._load_path = load_path
+        self._save_path = save_path
+
         self.input_size = input_size
         self.output_size = output_size
 
@@ -137,8 +141,8 @@ class PPOClipAgent:
         self.critic_optimizer = optim.Adam(self._critic.parameters(), lr=lr)
 
         self.epsilon = 0.2
-        self._batch_size = 200
-        self._epochs = 2
+        self._batch_size = 2048
+        self._epochs = 3
         self.multipliers = torch.tensor([
             np.prod(self.output_size[i+1:]) 
             for i in range(len(self.output_size))
@@ -159,6 +163,24 @@ class PPOClipAgent:
         self.writer = SummaryWriter(f'ppo_clip/runs/ppo_clip_{time.strftime("%Y%m%d-%H%M%S")}')
         self.update_count = 0
         
+    def save_weights(self):
+        """Save actor and critic model weights to files
+        
+        Args:
+            path (str, optional): Path to save weights to. If None, uses default path.
+        """
+        torch.save(self._actor.state_dict(), f"{self._save_path}/{self._counter}/actor.pth")
+        torch.save(self._critic.state_dict(), f"{self._save_path}/{self._counter}/critic.pth") 
+        print(f"Saved model weights to {self._save_path}")
+
+    def load_weights(self):
+        """Load actor and critic model weights from files"""
+        try:
+            self._actor.load_state_dict(torch.load(f"{self._load_path}/actor.pth", map_location=self.device))
+            self._critic.load_state_dict(torch.load(f"{self._load_path}/critic.pth", map_location=self.device))
+            print(f"Loaded model weights from {self._load_path}")
+        except FileNotFoundError as e:
+            print(f"Could not load weights from {self._load_path}: {e}")
     
     def game_ended(self, game_state):
         # who won
@@ -286,6 +308,10 @@ class PPOClipAgent:
             # print("sorted_indices values:", self._trajectories["global_info"])
 
             self._update()
+
+            if self._counter % (5 * self._batch_size) == 0:
+                self.save_weights()
+
             self._trajectories = copy.deepcopy(self._base_trajectories)
 
         return actions[0].tolist()
@@ -497,10 +523,6 @@ class PPOClipAgent:
         
         except Exception as e:
             print(f"Error in get_action: {e}")
-            print(f"Logits shape: {logits.shape}")
-            print(f"Masks shape: {masks.shape}")
-            print(f"Flat indices: {flat_indices}")
-            print(f"Actor output size: {self._actor.output_size}")
     
     def _log_training_metrics(self, actor_loss, critic_loss, ratio, advantages, values, rewards_to_go):
         """
