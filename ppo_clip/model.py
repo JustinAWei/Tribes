@@ -123,9 +123,9 @@ class PPOClipAgent:
                  input_size, 
                  output_size, 
                  lr=0.0001, 
-                 epsilon=0.2, 
+                 clip_ratio=0.2, 
                  batch_size=2048, 
-                 epochs=3, 
+                 n_epochs=3, 
                  gamma=0.99, 
                  gae_lambda=0.95):
         self.device = DEVICE
@@ -141,14 +141,14 @@ class PPOClipAgent:
         self._actor = Actor(BOARD_LEN, self.output_size).to(self.device)
         self._critic = Critic(BOARD_LEN).to(self.device).to(self.device)
 
-        self._learning_rate = 0.0001
+        self._learning_rate = lr
 
         self._actor_optimizer = optim.Adam(self._actor.parameters(), lr=self._learning_rate)
         self._critic_optimizer = optim.Adam(self._critic.parameters(), lr=self._learning_rate)
 
-        self._clip_ratio = 0.2
-        self._batch_size = 2048
-        self._n_epochs = 3
+        self._clip_ratio = clip_ratio
+        self._batch_size = batch_size
+        self._n_epochs = n_epochs
         self._gamma = gamma
         self._gae_lambda = gae_lambda
 
