@@ -176,6 +176,7 @@ class PPOClipAgent:
     def load_weights(self):
         """Load actor and critic model weights from files"""
         try:
+            print(f"Loading model weights from {self._load_path}")
             self._actor.load_state_dict(torch.load(f"{self._load_path}/actor.pth", map_location=self.device))
             self._critic.load_state_dict(torch.load(f"{self._load_path}/critic.pth", map_location=self.device))
             print(f"Loaded model weights from {self._load_path}")
@@ -273,8 +274,7 @@ class PPOClipAgent:
         # print("probs shape:", self._trajectories["probs"].shape)
         # print("mask shape:", self._trajectories["masks"].shape)
 
-        if self._counter % 512 == 0:
-            print(self._counter)
+        # if self._counter % 512 == 0:
         #     print("=== Trajectory Shapes ===")
         #     print("spatial_tensor shape:", len(self._trajectories["spatial_tensor"]), self._trajectories["spatial_tensor"][0].shape)
         #     print("global_info shape:", len(self._trajectories["global_info"]), self._trajectories["global_info"][0].shape)

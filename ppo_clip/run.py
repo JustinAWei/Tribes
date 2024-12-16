@@ -31,12 +31,11 @@ async def end_game(request: Request):
 
     if current_game_id in action_type_stats:
         current_tick = data['gameState']['tick']
-        print("Game Ended", current_game_id, "at tick", current_tick)
+        print("Game", current_game_id, "ended at tick", current_tick)
         # ACTION_TYPES is a dictionary of text to index, i want to print the text corresponding to the stats
 
-        sorted_action_type_stats = sorted(action_type_stats[current_game_id].items(), key=lambda x: x[1], reverse=True)
         for action_type, index in ACTION_TYPES.items():
-            print(f"{action_type}: {sorted_action_type_stats[current_game_id].get(index, 0)}")
+            print(f"{action_type}: {action_type_stats[current_game_id].get(index, 0)}")
 
     current_game_id = current_game_id + 1
     action_type_stats[current_game_id] = {}
