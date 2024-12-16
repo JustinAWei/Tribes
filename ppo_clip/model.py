@@ -1,4 +1,5 @@
 import copy
+import os
 import torch
 import torch.nn as nn
 import numpy as np
@@ -169,8 +170,11 @@ class PPOClipAgent:
         Args:
             path (str, optional): Path to save weights to. If None, uses default path.
         """
-        torch.save(self._actor.state_dict(), f"{self._save_path}/{self._counter}/actor.pth")
-        torch.save(self._critic.state_dict(), f"{self._save_path}/{self._counter}/critic.pth") 
+        print(f"Saving model weights to {self._save_path}")
+        save_dir = f"{self._save_path}/{self._counter}"
+        os.makedirs(save_dir, exist_ok=True)
+        torch.save(self._actor.state_dict(), f"{save_dir}/actor.pth")
+        torch.save(self._critic.state_dict(), f"{save_dir}/critic.pth") 
         print(f"Saved model weights to {self._save_path}")
 
     def load_weights(self):
