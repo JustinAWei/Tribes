@@ -180,7 +180,7 @@ class PPOClipAgent:
                     if global_info[game_idx, 0] == active_tribe_id:
                         # This is ranked "WIN/LOSE" first.
                         winner = rank_1_tribe_id == active_tribe_id
-                        self._trajectories["rewards"][i] = 1 if winner else -1
+                        self._trajectories["rewards"][i] = torch.tensor([[1 if winner else -1]], device=self.device)
                         print("Setting reward for tribe", active_tribe_id, "at index", i, "to", self._trajectories["rewards"][i])
                         break
 
