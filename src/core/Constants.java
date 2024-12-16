@@ -4,7 +4,7 @@ public class Constants {
     public static boolean LOG_STATS = true;
     public static boolean VERBOSE = true;
     public static boolean VISUALS = false;
-    public static boolean WRITE_SAVEGAMES = false;
+    public static int SAVE_GAME_FREQUENCY = 1; // Will save every N games played (set to 1 to save every game). Set to -1 to never save
     public static boolean DISABLE_NON_HUMAN_GRID_HIGHLIGHT = true;  // If true, human observing/playing doesn't have access to actions of non-human players
     public static int FRAME_DELAY = 0;// 500; //1000;
     public static boolean TURN_TIME_LIMITED = false; // if true, agents have a limited amount of time to finish their turn, which is specified by TURN_TIME_MILLIS

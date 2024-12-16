@@ -1,6 +1,8 @@
 import core.Constants;
 import core.Types;
 import core.game.Game;
+import gui.GUI;
+import gui.WindowInput;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import players.*;
@@ -23,6 +25,7 @@ import players.portfolio.RandomPortfolio;
 import utils.file.IO;
 import me.tongfei.progressbar.*;
 
+import java.io.File;
 import java.util.*;
 
 import static core.Types.GAME_MODE.*;
@@ -37,20 +40,23 @@ public class Play {
     private static long GAME_SEED = -1;
 
     public static void main(String[] args) {
-
         try {
             JSONObject config = new IO().readJSON("play.json");
 
             if (config != null && !config.isEmpty()) {
+                String runMode = config.getString("Run Mode");
+                Constants.VERBOSE = config.getBoolean("Verbose");
+                RUN_VERBOSE = config.getBoolean("Verbose");
+
                 int numGames = config.getInt("Number of Games");
-                System.out.println("Starting " + numGames + " games...");
+                if (runMode.equalsIgnoreCase("Replay")) {
+                    numGames = 1;
+                }
+                System.out.println("Starting " + numGames + " games with run mode: " + runMode);
 
                 try (ProgressBar pb = new ProgressBar("Games", numGames)) {
                     for (int gameIndex = 0; gameIndex < numGames; gameIndex++) {
                         boolean stop = (gameIndex == numGames - 1);
-                        String runMode = config.getString("Run Mode");
-                        Constants.VERBOSE = config.getBoolean("Verbose");
-                        RUN_VERBOSE = config.getBoolean("Verbose");
 
                         JSONArray playersArray = (JSONArray) config.get("Players");
                         JSONArray tribesArray = (JSONArray) config.get("Tribes");
@@ -90,19 +96,24 @@ public class Play {
                         GAME_SEED = config.getLong("Game Seed");
                         long levelSeed = config.getLong("Level Seed");
 
-                        //1. Play one game with visuals using the Level Generator:
+                        // 1. Play one game with visuals using the Level Generator:
                         if (runMode.equalsIgnoreCase("PlayLG")) {
-                            play(tribes, levelSeed, playerTypes, gameMode, stop);
+                            play(tribes, levelSeed, playerTypes, gameMode, stop, gameIndex);
 
-                            //2. Play one game with visuals from a file:
-                        } else if (runMode.equalsIgnoreCase("PlayFile")) {
+                        // 2. Play one game with visuals from a specific level file:
+                        } else if (runMode.equalsIgnoreCase("PlayFromLevelFile")) {
                             String levelFile = config.getString("Level File");
-                            play(levelFile, playerTypes, gameMode, stop);
+                            play(levelFile, playerTypes, gameMode, stop, gameIndex);
 
-                            //3. Play one game with visuals from a savegame
-                        } else if (runMode.equalsIgnoreCase("Replay")) {
-                            String saveGameFile = config.getString("Replay File Name");
+                        // 3. Continue playing one game with visuals from a savegame
+                        } else if (runMode.equalsIgnoreCase("ContinuePlayFromGameStateFile")) {
+                            String saveGameFile = config.getString("Continue Game File Name");
                             load(playerTypes, saveGameFile);
+
+                        // 4. Replay one game with visuals from specific folder
+                        } else if (runMode.equalsIgnoreCase("Replay")) {
+                            String replayFolder = config.getString("Replay Folder");
+                            replay(playerTypes, replayFolder);
                         } else {
                             System.out.println("ERROR: run mode '" + runMode + "' not recognized.");
                         }
@@ -119,22 +130,22 @@ public class Play {
         }
     }
 
-    private static void play(Types.TRIBE[] tribes, long levelSeed, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode, boolean stop)
+    private static void play(Types.TRIBE[] tribes, long levelSeed, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode, boolean stop, int gameIndex)
     {
         KeyController ki = new KeyController(true);
         ActionController ac = new ActionController();
 
         Game game = _prepareGame(tribes, levelSeed, playerTypes, gameMode, ac);
-        Run.runGame(game, ki, ac, stop);
+        Run.runGame(game, ki, ac, stop, gameIndex);
     }
 
-    private static void play(String levelFile, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode, boolean stop)
+    private static void play(String levelFile, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode, boolean stop, int gameIndex)
     {
         KeyController ki = new KeyController(true);
         ActionController ac = new ActionController();
 
         Game game = _prepareGame(levelFile, playerTypes, gameMode, ac);
-        Run.runGame(game, ki, ac, stop);
+        Run.runGame(game, ki, ac, stop, gameIndex);
     }
 
 
@@ -146,9 +157,90 @@ public class Play {
         long agentSeed = AGENT_SEED == -1 ? System.currentTimeMillis() + new Random().nextInt() : AGENT_SEED;
 
         Game game = _loadGame(playerTypes, saveGameFile, agentSeed);
-        Run.runGame(game, ki, ac, true);
+        Run.runGame(game, ki, ac, true, 0);
     }
 
+
+    private static void replay(Run.PlayerType[] playerTypes, String replayFolder) {
+        System.out.println("Replay method called with folder: " + replayFolder);
+        KeyController ki = new KeyController(true);
+        ActionController ac = new ActionController();
+
+        long agentSeed = AGENT_SEED == -1 ? System.currentTimeMillis() + new Random().nextInt() : AGENT_SEED;
+
+        // Load the game states from the replay folder
+        List<Game> gameStates = loadGameStatesFromFolder(replayFolder, playerTypes, agentSeed);
+
+        // Run the replay using the loaded game states
+        runReplay(gameStates, ki, ac);
+    }
+
+    private static List<Game> loadGameStatesFromFolder(String replayFolder, Run.PlayerType[] playerTypes, long agentSeed) {
+        System.out.println("Loading game states from folder: " + replayFolder);
+        List<Game> gameStates = new ArrayList<>();
+        File folder = new File(replayFolder);
+    
+        // Recursively find all game.json files
+        List<File> gameFiles = new ArrayList<>();
+        findGameFiles(folder, gameFiles);
+    
+        if (!gameFiles.isEmpty()) {
+            // Sort files based on the directory name, which is in the format "{tick}_{activeTribeID}"
+            gameFiles.sort(Comparator.comparing(file -> {
+                String[] parts = file.getParentFile().getName().split("_");
+                int tick = Integer.parseInt(parts[0]);
+                int tribeID = Integer.parseInt(parts[1]);
+                return tick * 1000 + tribeID; // Multiply tick by 1000 to ensure it has higher sorting priority
+            }));
+    
+            System.out.println("Found " + gameFiles.size() + " game state files.");
+            for (File file : gameFiles) {
+                System.out.println("Loading game state from file: " + file.getPath());
+                Game game = _loadGame(playerTypes, file.getPath(), agentSeed);
+                gameStates.add(game);
+            }
+        } else {
+            System.out.println("No game state files found in folder.");
+        }
+        return gameStates;
+    }
+    
+    private static void findGameFiles(File directory, List<File> gameFiles) {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    findGameFiles(file, gameFiles); // Recursively search subdirectories
+                } else if (file.getName().equals("game.json")) {
+                    gameFiles.add(file);
+                }
+            }
+        }
+    }
+
+    private static void runReplay(List<Game> gameStates, KeyController ki, ActionController ac) {
+        System.out.println("Running replay with " + gameStates.size() + " game states.");
+        GUI frame = null;
+        WindowInput wi = null;
+    
+        for (int i = 0; i < gameStates.size(); i++) {
+            Game game = gameStates.get(i);
+            System.out.println("Displaying game state " + (i + 1) + " of " + gameStates.size());
+    
+            if (frame == null) {
+                wi = new WindowInput();
+                frame = new GUI(game, "Replay", ki, wi, ac, false);
+                frame.addWindowListener(wi);
+                frame.addKeyListener(ki);
+            }
+    
+            game.run(frame, wi, true, 0);
+        }
+    
+        if (frame != null) {
+            frame.dispose();
+        }
+    }
 
     private static Game _prepareGame(String levelFile, Run.PlayerType[] playerTypes, Types.GAME_MODE gameMode, ActionController ac)
     {

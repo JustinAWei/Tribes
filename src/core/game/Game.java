@@ -1,23 +1,21 @@
 package core.game;
 
 import core.Constants;
+import static core.Constants.*;
 import core.Types;
+import static core.Types.ACTION.*;
 import core.actions.Action;
 import core.actions.tribeactions.EndTurn;
 import core.actors.Tribe;
+import gui.GUI;
+import gui.WindowInput;
+import java.util.*;
 import players.Agent;
 import players.HumanAgent;
 import utils.*;
-import gui.GUI;
-import gui.WindowInput;
 import utils.mapelites.Feature;
 import utils.stats.AIStats;
 import utils.stats.GameplayStats;
-
-import java.util.*;
-
-import static core.Constants.*;
-import static core.Types.ACTION.*;
 
 public class Game {
 
@@ -47,6 +45,8 @@ public class Game {
 
     // Gameplay stats for each player.
     private GameplayStats[] gpStats;
+
+    private boolean replayMode = false;
 
     /**
      * Constructor of the game
@@ -207,7 +207,7 @@ public class Game {
      * @param frame window to draw the game
      * @param wi    input for the window.
      */
-    public void run(GUI frame, WindowInput wi, boolean stop) {
+    public void run(GUI frame, WindowInput wi, boolean stop, int gameIndex) {
         if (frame == null || wi == null)
             VISUALS = false;
 
@@ -231,10 +231,10 @@ public class Game {
                     for (TribeResult tr : ranking) {
                         int idx = tr.getId();
                         AIStats ais = aiStats[idx];
-                        if(VERBOSE) ais.print();
+                        if (VERBOSE) ais.print();
                         GameplayStats gps = gpStats[idx];
                         gps.logGameEnd(tr);
-                        if(VERBOSE) {
+                        if (VERBOSE) {
                             gps.print();
 
                             ArrayList<GameplayStats> agps = new ArrayList<>();
@@ -263,7 +263,7 @@ public class Game {
                 }
             }
             if (!gameOver) {
-                tick(frame);
+                tick(frame, gameIndex);
             } else {
                 frame.update(getGameState(-1), null);
             }
@@ -275,7 +275,7 @@ public class Game {
      *
      * @param frame GUI of the game
      */
-    private void tick(GUI frame) {
+    private void tick(GUI frame, int gameIndex) {
 
 //        System.out.println("Tick: " + gs.getTick());
         Tribe[] tribes = gs.getTribes();
@@ -290,7 +290,7 @@ public class Game {
             processTurn(i, tribe, frame);
 
             // Save Game
-            if (Constants.WRITE_SAVEGAMES)
+            if (Constants.SAVE_GAME_FREQUENCY != -1 && gameIndex % Constants.SAVE_GAME_FREQUENCY == 0)
                 GameSaver.writeTurnFile(gs, getBoard(), seed);
 
             //it may be that this player won the game, no more playing.
@@ -607,5 +607,9 @@ public class Game {
 
     public GameplayStats getGamePlayStats(int id) {
         return gpStats[id];
+    }
+
+    public void setReplayMode(boolean replayMode) {
+        this.replayMode = replayMode;
     }
 }

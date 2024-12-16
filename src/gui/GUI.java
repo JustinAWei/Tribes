@@ -40,7 +40,7 @@ public class GUI extends JFrame {
     private boolean pauseAfterTurn = false;  // If game should automatically pause after one turn (of one tribe) is played
     private boolean pauseAfterTick = false;  // If game should automatically pause after one tick (all tribes) is played
 
-//    private KeyController ki;
+    private KeyController ki;
     private WindowInput wi;
     private ActionController ac;
     private Examine lastExamineAction;
@@ -83,7 +83,7 @@ public class GUI extends JFrame {
         GUI_TECH_PANEL_HEIGHT = (int)(0.16*screenDiagonal*scale);
         GUI_TECH_PANEL_FULL_SIZE = (int)(GUI_TECH_PANEL_FULL_SIZE*(1/scale));
 
-//        this.ki = ki;
+        this.ki = ki;
         this.ac = ac;
         this.wi = wi;
         this.game = game;

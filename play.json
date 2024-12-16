@@ -1,6 +1,6 @@
 {
   "Run Mode" : "PlayLG",
-  "Run Mode comment" : "PlayLG / PlayFile / Replay",
+  "Run Mode comment" : "PlayLG / PlayFromLevelFile / ContinuePlayFromGameStateFile / Replay",
   "Progressive Bias" : true,
   "Pruning" : true,
   "K init mult": 0.5,
@@ -15,7 +15,8 @@
   "Players" : ["PPOAgent", "PPOAgent"],
   "Tribes" : ["Xin Xi", "Imperius"],
   "Verbose" : false,
-  "Replay File Name" : "save/1590072023986/0_0/game.json",
+  "Continue Game File Name" : "save/1734378261274/0_0/game.json",
+  "Replay Folder" : "save/1734378261274/",
   "Level File" : "levels/MinimalLevel2.csv",
   "Game Seed" : "-1",
   "Agents Seed" : "-1",
