@@ -3,18 +3,12 @@ import os
 import torch
 import torch.nn as nn
 import numpy as np
-from collections import defaultdict
-# import loss
-from torch.nn import MSELoss
 from utils import BOARD_LEN
 from utils import reward_fn
 from torch import optim
 import math
 from vectorize_game_state import game_state_to_vector
 from torch.distributions import Categorical
-from utils import timing_decorator, serialize_trajectories
-import requests
-import modal
 from torch.utils.tensorboard import SummaryWriter
 import time
 import json
@@ -241,7 +235,6 @@ class PPOClipAgent:
 
         # Handle each game state in the batch
         for game_idx, gs in enumerate(game_state):
-            rank_1_tribe_id = gs['ranking'][0]["id"]
             tribes = gs['board']['tribes']
             for tribe in tribes:
                 active_tribe_id = tribe['actorId']
@@ -249,9 +242,7 @@ class PPOClipAgent:
                 for i in range(len(self._trajectories["global_info"])-1, -1, -1):
                     global_info = self._trajectories["global_info"][i]
                     if global_info[game_idx, 0] == active_tribe_id:
-                        # This is ranked "WIN/LOSE" first.
-                        winner = rank_1_tribe_id == active_tribe_id
-                        self._trajectories["rewards"][i] = torch.tensor([[1 if winner else -1]], device=self.device)
+                        self._trajectories["rewards"][i] = torch.tensor([[reward_fn(gs, active_tribe_id)]], device=self.device)
                         print("Setting reward for tribe", active_tribe_id, "at index", i, "to", self._trajectories["rewards"][i])
                         break
 
@@ -279,16 +270,15 @@ class PPOClipAgent:
                 # Set corresponding position in mask to 0 to allow this action
                 masks[batch_idx][action[0]][action[1]][action[2]] = 0
 
-        # compute rewards
-        rewards = torch.tensor([[reward_fn(game_state) for game_state in [game_state]]]).to(self.device)
-
         # Collect trajectory
         actions, probs = self.get_action(spatial_tensor, global_info, masks)
 
         self._trajectories["spatial_tensor"].append(spatial_tensor)
         self._trajectories["global_info"].append(global_info)
         self._trajectories["actions"].append(actions)
-        self._trajectories["rewards"].append(rewards)
+
+        # Rewards are calculated after the game ends
+        self._trajectories["rewards"].append(torch.tensor([[0]], device=self.device))
         self._trajectories["probs"].append(probs)
         self._trajectories["masks"].append(masks)
 

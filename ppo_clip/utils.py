@@ -221,7 +221,7 @@ MAX_EXTRA_VARS = max(len(ACTION_TYPES.values()), len(BONUS_TYPES.values()), len(
 def game_over(gs):
     return gs['gameIsOver']
 
-def reward_fn(gs):
+def reward_fn(gs, active_tribe_id):
     '''
     Ranking is a list of tribes scored by WIN, score, tech, cities, production, wars, stars
 
@@ -244,24 +244,26 @@ def reward_fn(gs):
     '''
 
     reward = 0
-    active_tribe_id = gs['board']['activeTribeID']
 
     tribes = gs['board']['tribes']
     for tribe in tribes:
         if tribe['actorId'] == active_tribe_id: 
-            # TODO: Actually send the final game state on end!
             if tribe['winner'] == "WIN":
                 reward = 1
-            elif tribe['winner'] == "LOSE":
+            elif tribe['winner'] == "LOSS":
                 reward = -1
-            # else:
-            #     ranking = gs['ranking']
-            #     for tribe in ranking:
-            #         if tribe['id'] == active_tribe_id:
-            #             # Note: this should be between 0 and 1
-            #             # Max techs < 100, max num cities < board size ^ 2, max production < 1000
-            #             max_intermediate_rewards = 100 + BOARD_LEN ** 2 + 1000
-            #             reward = (tribe['numTechsResearched'] + tribe['numCities'] + tribe['production']) / max_intermediate_rewards
+            else:
+                ranking = gs['ranking']
+                for tribe in ranking:
+                    if tribe['id'] == active_tribe_id:
+                        total_possible_counted_cities = max(1, BOARD_LEN * BOARD_LEN / 4)
+                        city_reward_pct = min(tribe['numCities'] / total_possible_counted_cities, 1)
+
+                        total_possible_counted_production = 150
+                        production_reward_pct = min(tribe['production'] / total_possible_counted_production, 1)
+
+                        # This can only be max .1, because the real reward is 1 for winning
+                        reward = .05 * city_reward_pct + .05 * production_reward_pct
 
     return reward
 
