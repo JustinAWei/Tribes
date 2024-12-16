@@ -21,6 +21,7 @@ import players.rhea.RHEAAgent;
 import players.rhea.RHEAParams;
 import players.portfolio.RandomPortfolio;
 import utils.file.IO;
+import me.tongfei.progressbar.*;
 
 import java.util.*;
 
@@ -42,66 +43,71 @@ public class Play {
 
             if (config != null && !config.isEmpty()) {
                 int numGames = config.getInt("Number of Games");
-                for (int gameIndex = 0; gameIndex < numGames; gameIndex++) {
-                    boolean stop = (gameIndex == numGames - 1);
-                    System.out.println("Loading game " + gameIndex);
-                    String runMode = config.getString("Run Mode");
-                    Constants.VERBOSE = config.getBoolean("Verbose");
-                    RUN_VERBOSE = config.getBoolean("Verbose");
+                System.out.println("Starting " + numGames + " games...");
 
-                    JSONArray playersArray = (JSONArray) config.get("Players");
-                    JSONArray tribesArray = (JSONArray) config.get("Tribes");
-                    if (playersArray.length() != tribesArray.length())
-                        throw new Exception("Number of players must be equal to number of tribes");
+                try (ProgressBar pb = new ProgressBar("Games", numGames)) {
+                    for (int gameIndex = 0; gameIndex < numGames; gameIndex++) {
+                        boolean stop = (gameIndex == numGames - 1);
+                        String runMode = config.getString("Run Mode");
+                        Constants.VERBOSE = config.getBoolean("Verbose");
+                        RUN_VERBOSE = config.getBoolean("Verbose");
 
-                    int nPlayers = playersArray.length();
-                    Run.PlayerType[] playerTypes = new Run.PlayerType[nPlayers];
-                    Types.TRIBE[] tribes = new Types.TRIBE[nPlayers];
+                        JSONArray playersArray = (JSONArray) config.get("Players");
+                        JSONArray tribesArray = (JSONArray) config.get("Tribes");
+                        if (playersArray.length() != tribesArray.length())
+                            throw new Exception("Number of players must be equal to number of tribes");
 
-                    for (int i = 0; i < nPlayers; ++i) {
-                        playerTypes[i] = Run.parsePlayerTypeStr(playersArray.getString(i));
-                        tribes[i] = Run.parseTribeStr(tribesArray.getString(i));
-                    }
-                    Types.GAME_MODE gameMode = config.getString("Game Mode").equalsIgnoreCase("Capitals") ?
-                            CAPITALS : SCORE;
+                        int nPlayers = playersArray.length();
+                        Run.PlayerType[] playerTypes = new Run.PlayerType[nPlayers];
+                        Types.TRIBE[] tribes = new Types.TRIBE[nPlayers];
 
-                    Run.MAX_LENGTH = config.getInt("Search Depth");
-                    Run.FORCE_TURN_END = config.getBoolean("Force End");
-                    Run.MCTS_ROLLOUTS = config.getBoolean("Rollouts");
-                    Run.POP_SIZE = config.getInt("Population Size");
+                        for (int i = 0; i < nPlayers; ++i) {
+                            playerTypes[i] = Run.parsePlayerTypeStr(playersArray.getString(i));
+                            tribes[i] = Run.parseTribeStr(tribesArray.getString(i));
+                        }
+                        Types.GAME_MODE gameMode = config.getString("Game Mode").equalsIgnoreCase("Capitals") ?
+                                CAPITALS : SCORE;
 
-                    //Portfolio and pruning variables:
-                    Run.PRUNING = config.getBoolean("Pruning");
-                    Run.PROGBIAS = config.getBoolean("Progressive Bias");
-                    Run.K_INIT_MULT = config.getDouble("K init mult");
-                    Run.T_MULT = config.getDouble("T mult");
-                    Run.A_MULT = config.getDouble("A mult");
-                    Run.B = config.getDouble("B");
+                        Run.MAX_LENGTH = config.getInt("Search Depth");
+                        Run.FORCE_TURN_END = config.getBoolean("Force End");
+                        Run.MCTS_ROLLOUTS = config.getBoolean("Rollouts");
+                        Run.POP_SIZE = config.getInt("Population Size");
 
-                    JSONArray weights = null;
-                    if (config.has("pMCTS Weights"))
-                        weights = (JSONArray) config.get("pMCTS Weights");
-                    Run.pMCTSweights = Run.getWeights(weights);
+                        //Portfolio and pruning variables:
+                        Run.PRUNING = config.getBoolean("Pruning");
+                        Run.PROGBIAS = config.getBoolean("Progressive Bias");
+                        Run.K_INIT_MULT = config.getDouble("K init mult");
+                        Run.T_MULT = config.getDouble("T mult");
+                        Run.A_MULT = config.getDouble("A mult");
+                        Run.B = config.getDouble("B");
 
-                    AGENT_SEED = config.getLong("Agents Seed");
-                    GAME_SEED = config.getLong("Game Seed");
-                    long levelSeed = config.getLong("Level Seed");
+                        JSONArray weights = null;
+                        if (config.has("pMCTS Weights"))
+                            weights = (JSONArray) config.get("pMCTS Weights");
+                        Run.pMCTSweights = Run.getWeights(weights);
 
-                    //1. Play one game with visuals using the Level Generator:
-                    if (runMode.equalsIgnoreCase("PlayLG")) {
-                        play(tribes, levelSeed, playerTypes, gameMode, stop);
+                        AGENT_SEED = config.getLong("Agents Seed");
+                        GAME_SEED = config.getLong("Game Seed");
+                        long levelSeed = config.getLong("Level Seed");
 
-                        //2. Play one game with visuals from a file:
-                    } else if (runMode.equalsIgnoreCase("PlayFile")) {
-                        String levelFile = config.getString("Level File");
-                        play(levelFile, playerTypes, gameMode, stop);
+                        //1. Play one game with visuals using the Level Generator:
+                        if (runMode.equalsIgnoreCase("PlayLG")) {
+                            play(tribes, levelSeed, playerTypes, gameMode, stop);
 
-                        //3. Play one game with visuals from a savegame
-                    } else if (runMode.equalsIgnoreCase("Replay")) {
-                        String saveGameFile = config.getString("Replay File Name");
-                        load(playerTypes, saveGameFile);
-                    } else {
-                        System.out.println("ERROR: run mode '" + runMode + "' not recognized.");
+                            //2. Play one game with visuals from a file:
+                        } else if (runMode.equalsIgnoreCase("PlayFile")) {
+                            String levelFile = config.getString("Level File");
+                            play(levelFile, playerTypes, gameMode, stop);
+
+                            //3. Play one game with visuals from a savegame
+                        } else if (runMode.equalsIgnoreCase("Replay")) {
+                            String saveGameFile = config.getString("Replay File Name");
+                            load(playerTypes, saveGameFile);
+                        } else {
+                            System.out.println("ERROR: run mode '" + runMode + "' not recognized.");
+                        }
+
+                        pb.step();
                     }
                 }
             } else {
