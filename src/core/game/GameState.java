@@ -1,5 +1,6 @@
 package core.game;
 
+import com.google.gson.*;
 import core.TechnologyTree;
 import core.TribesConfig;
 import core.Types;
@@ -14,6 +15,10 @@ import core.actors.*;
 import core.actors.units.Unit;
 import core.levelgen.LevelGenerator;
 import java.util.*;
+
+import org.json.JSONObject;
+import utils.GameStateSerializer;
+import utils.PostRequestSender;
 import utils.Vector2d;
 import utils.file.IO;
 
@@ -641,6 +646,28 @@ public class GameState {
         }
 
         gameIsOver = isEnded;
+
+        if (isEnded) {
+            System.out.println("GAME OVER");
+            PostRequestSender postRequestSender = new PostRequestSender();
+            String url = "http://localhost:8000/end_game";
+            JsonObject jsonObject = new JsonObject();
+
+            // Serialize the GameState
+            Gson gson = new GsonBuilder()
+                    .registerTypeAdapter(GameState.class, new GameStateSerializer())
+                    .registerTypeAdapter(Types.TRIBE.class, (JsonSerializer<Types.TRIBE>) (src, typeOfSrc, context) ->
+                            new JsonPrimitive(src.toString()))
+                    .registerTypeAdapter(Types.RESULT.class, (JsonSerializer<Types.RESULT>) (src, typeOfSrc, context) ->
+                            new JsonPrimitive(src.toString()))
+                    .create();
+            JsonElement gameStateJson = gson.toJsonTree(this);;
+            jsonObject.add("gameState", gameStateJson); // Add serialized game state
+
+            String response = postRequestSender.sendPostRequest(url, jsonObject.toString());
+            JSONObject jsonResponse = new JSONObject(response);
+            System.out.println(jsonResponse.toString());
+        }
         return isEnded;
     }
 

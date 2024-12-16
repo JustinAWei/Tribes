@@ -20,6 +20,12 @@ current_game_id = 0
 current_tick = -1
 action_type_stats = {}
 
+@app.post("/end_game")
+async def end_game(request: Request):
+    data = await request.json()
+    agent.game_ended([data['gameState']])
+    return {"status": 200}
+
 @app.post("/receive")
 async def receive_data(request: Request):
     """

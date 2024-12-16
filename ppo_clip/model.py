@@ -166,19 +166,23 @@ class PPOClipAgent:
         # last reward is the reward for the last end turn
         # the very last index should be the reward for the last action and should be set to 1
 
-        rank_1_tribe_id = game_state['ranking'][0]["id"]
-        tribes = game_state['board']['tribes']
-        for tribe in tribes:
-            active_tribe_id = tribe['actorId']
-            # find the last action for the tribe in global_info
-            for i in range(len(self._trajectories["global_info"])-1, -1, -1):
-                global_info = self._trajectories["global_info"][i]
-                if global_info[0] == active_tribe_id:
-                    # This is ranked "WIN/LOSE" first.
-                    winner = rank_1_tribe_id == active_tribe_id
-                    self._trajectories["rewards"][i] = 1 if winner else -1
-                    print("Setting reward for tribe", active_tribe_id, "at index", i, "to", self._trajectories["rewards"][i])
-                    break
+        print("=== Game Ended ===")
+
+        # Handle each game state in the batch
+        for game_idx, gs in enumerate(game_state):
+            rank_1_tribe_id = gs['ranking'][0]["id"]
+            tribes = gs['board']['tribes']
+            for tribe in tribes:
+                active_tribe_id = tribe['actorId']
+                # find the last action for the tribe in global_info
+                for i in range(len(self._trajectories["global_info"])-1, -1, -1):
+                    global_info = self._trajectories["global_info"][i]
+                    if global_info[game_idx, 0] == active_tribe_id:
+                        # This is ranked "WIN/LOSE" first.
+                        winner = rank_1_tribe_id == active_tribe_id
+                        self._trajectories["rewards"][i] = 1 if winner else -1
+                        print("Setting reward for tribe", active_tribe_id, "at index", i, "to", self._trajectories["rewards"][i])
+                        break
 
         # the last turn for the tribe that didn't win should be set to 0
     
