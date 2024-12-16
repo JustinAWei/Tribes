@@ -359,8 +359,6 @@ class PPOClipAgent:
         global_info = torch.cat(self._trajectories["global_info"], dim=0).to(self.device).float()
         masks = torch.cat(self._trajectories["masks"], dim=0).to(self.device).float()
 
-        print(rewards)
-        print(dones)
 
         # print("actions shape:", actions.shape)
         # print("probs shape:", probs.shape)
