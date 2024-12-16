@@ -47,6 +47,7 @@ public class Play {
                     System.out.println("Loading game " + gameIndex);
                     String runMode = config.getString("Run Mode");
                     Constants.VERBOSE = config.getBoolean("Verbose");
+                    RUN_VERBOSE = config.getBoolean("Verbose");
 
                     JSONArray playersArray = (JSONArray) config.get("Players");
                     JSONArray tribesArray = (JSONArray) config.get("Tribes");

@@ -13,20 +13,15 @@ import math
 from vectorize_game_state import game_state_to_vector
 from torch.distributions import Categorical
 from utils import timing_decorator, serialize_trajectories
-from modal_functions.update import remote_update
 import requests
 import modal
 from torch.utils.tensorboard import SummaryWriter
 import time
 import json
 
-# Endpoint for the update function
-url = "https://kev2010--ppo-clip-update-trigger-update.modal.run"
-
 DEVICE = 'mps' if torch.backends.mps.is_available() else 'cpu'
 
 # To reduce duplicate code, this is used for both the actor and the critic
-# NOTE: we are not batching the input for now
 class FeatureExtractor(nn.Module):
     def __init__(self):
         super(FeatureExtractor, self).__init__()
@@ -49,7 +44,6 @@ class FeatureExtractor(nn.Module):
         
     
     def forward(self, spatial, global_features):
-        # print("=== Feature Extractor Forward ===")
         # Rearrange spatial for CNN
         spatial = spatial.permute(0, 3, 1, 2)  # -> (batch_size, 27, board_size, board_size)
         
@@ -123,7 +117,17 @@ class Critic(nn.Module):
         return self.value_head(combined)  # Output should be (batch_size, 1)
 
 class PPOClipAgent:
-    def __init__(self, load_path, save_path, input_size, output_size):
+    def __init__(self, 
+                 load_path, 
+                 save_path, 
+                 input_size, 
+                 output_size, 
+                 lr=0.0001, 
+                 epsilon=0.2, 
+                 batch_size=2048, 
+                 epochs=3, 
+                 gamma=0.99, 
+                 gae_lambda=0.95):
         self.device = DEVICE
         print(f"Using device: {self.device}")
         print("Initializing PPOClipAgent", output_size)
@@ -145,6 +149,8 @@ class PPOClipAgent:
         self._clip_ratio = 0.2
         self._batch_size = 2048
         self._n_epochs = 3
+        self._gamma = gamma
+        self._gae_lambda = gae_lambda
 
         self.multipliers = torch.tensor([
             np.prod(self.output_size[i+1:]) 
@@ -263,58 +269,28 @@ class PPOClipAgent:
         spatial_tensor = spatial_tensor.to(self.device)
         global_info = global_info.to(self.device)
 
-        # print("spatial_tensor shape:", spatial_tensor.shape)
-        # print("global_info shape:", global_info.shape)
-
         batch_size = spatial_tensor.shape[0]
 
         # Create mask tensor of -inf everywhere
         masks = torch.full((batch_size, *self.output_size), float('-inf')).to(self.device) # -> (batch_size, action_space_size)
-        # print("mask shape:", masks.shape)
-        # Convert valid actions to tensor indices and set to 0 in mask
-        # Convert valid actions to indices in flattened action space
         for batch_idx, actions in enumerate([valid_actions]):
             # Each action is [action_type, x1, y1, x2, y2, extra]
             for action in actions:
-                # print("action:", action)
                 # Set corresponding position in mask to 0 to allow this action
                 masks[batch_idx][action[0]][action[1]][action[2]] = 0
 
         # compute rewards
         rewards = torch.tensor([[reward_fn(game_state) for game_state in [game_state]]]).to(self.device)
-        # print("rewards shape:", rewards.shape)
 
         # Collect trajectory
         actions, probs = self.get_action(spatial_tensor, global_info, masks)
-        # print("ALL SHAPES")
-        # print("actions shape:", actions.shape)
-        # print("probs shape:", probs.shape)
-        # print("masks shape:", masks.shape)
-        # print("rewards shape:", rewards.shape)
 
-        # self._trajectories = {
-        #     "spatial_tensor": torch.cat((self._trajectories["spatial_tensor"], spatial_tensor), dim=0),
-        #     "global_info": torch.cat((self._trajectories["global_info"], global_info), dim=0),
-        #     "actions": torch.cat((self._trajectories["actions"], actions), dim=0),
-        #     "rewards": torch.cat((self._trajectories["rewards"], rewards), dim=0),
-        #     "probs": torch.cat((self._trajectories["probs"], probs), dim=0),
-        #     "masks": torch.cat((self._trajectories["masks"], masks), dim=0) 
-        # }
         self._trajectories["spatial_tensor"].append(spatial_tensor)
         self._trajectories["global_info"].append(global_info)
         self._trajectories["actions"].append(actions)
         self._trajectories["rewards"].append(rewards)
         self._trajectories["probs"].append(probs)
         self._trajectories["masks"].append(masks)
-
-
-        # print("\n=== Trajectory Shapes ===")
-        # print("spatial_tensor shape:", self._trajectories["spatial_tensor"].shape)
-        # print("global_info shape:", self._trajectories["global_info"].shape)
-        # print("actions shape:", self._trajectories["actions"].shape) 
-        # print("rewards shape:", self._trajectories["rewards"].shape)
-        # print("probs shape:", self._trajectories["probs"].shape)
-        # print("mask shape:", self._trajectories["masks"].shape)
 
         # if self._counter % 512 == 0:
         #     print("=== Trajectory Shapes ===")
@@ -326,18 +302,14 @@ class PPOClipAgent:
         #     print("mask shape:", len(self._trajectories["masks"]), self._trajectories["masks"][0].shape)
         
         if self._counter % self._batch_size == 0:
-            # Sort trajectories by tribe ID
-
             # Convert list of tensors to single tensor for easier manipulation
             global_info_tensor = torch.cat(self._trajectories["global_info"], dim=0)
             
             # Get tribe IDs from first column
             tribe_ids = global_info_tensor[:, 0]
-            # print("tribe_ids:", tribe_ids)
 
             # Get indices that would sort by tribe ID while preserving order
             sorted_indices = torch.argsort(tribe_ids, stable=True)
-            # print("sorted_indices:", sorted_indices)
             
             # Apply sorting to all trajectory components
             self._trajectories["spatial_tensor"] = [self._trajectories["spatial_tensor"][i] for i in sorted_indices]
@@ -346,8 +318,6 @@ class PPOClipAgent:
             self._trajectories["rewards"] = [self._trajectories["rewards"][i] for i in sorted_indices]
             self._trajectories["probs"] = [self._trajectories["probs"][i] for i in sorted_indices]
             self._trajectories["masks"] = [self._trajectories["masks"][i] for i in sorted_indices]
-
-            # print("sorted_indices values:", self._trajectories["global_info"])
 
             self._update()
 
@@ -359,7 +329,7 @@ class PPOClipAgent:
         return actions[0].tolist()
 
     
-    def advantage(self, rewards, values, dones, gamma=0.99, lambda_=0.95):
+    def advantage(self, rewards, values, dones):
         """
         Calculate advantage using Generalized Advantage Estimation (GAE)
         
@@ -385,10 +355,10 @@ class PPOClipAgent:
                 last_value = values[t]
                 
             # Calculate TD error
-            delta = rewards[t] + gamma * last_value * (1 - dones[t]) - values[t]
+            delta = rewards[t] + self._gamma * last_value * (1 - dones[t]) - values[t]
             
             # Calculate advantage using GAE
-            advantage = delta + gamma * lambda_ * (1 - dones[t]) * last_advantage
+            advantage = delta + self._gamma * self._gae_lambda * (1 - dones[t]) * last_advantage
             
             advantages[t] = advantage
             last_advantage = advantage
@@ -401,24 +371,7 @@ class PPOClipAgent:
     
     # @profile
     def _update(self):
-#         remote_update = modal.Function.lookup("ppo_clip_update", "remote_update")
-# 
-#         # Call the remote function asynchronously
-#         return await remote_update.remote(
-#             serialized_trajectories=serialize_trajectories(self._trajectories),
-#             output_size=self.output_size,
-#             epochs=self._epochs,
-#             epsilon=self.epsilon,
-#             actor_optimizer=self._actor_optimizer.state_dict(),
-#             critic_optimizer=self._critic_optimizer.state_dict(),
-#             critic=self._critic.state_dict(),
-#             advantage=self.advantage,
-#             get_action=self.get_action
-#         )
-    
-        # print("=== Update ===")
-
-                # Move tensors to GPU
+        # Move tensors to GPU
         probs = torch.cat(self._trajectories["probs"], dim=0).to(self.device).float()
         actions = torch.cat(self._trajectories["actions"], dim=0).to(self.device).float()
         rewards = torch.cat(self._trajectories["rewards"], dim=0).to(self.device).float()
@@ -428,91 +381,43 @@ class PPOClipAgent:
         masks = torch.cat(self._trajectories["masks"], dim=0).to(self.device).float()
 
 
-        # print("actions shape:", actions.shape)
-        # print("probs shape:", probs.shape)
-
         dist = Categorical(probs)
-
-        # print("dist:", dist)
-
-        # # translate actions to flat indices using ravel_multi_index
-        # flat_actions = np.ravel_multi_index(tuple(actions.T), self.output_size)
-        # flat_actions = torch.tensor(flat_actions, device=self.device)
-        # Replace np.ravel_multi_index with PyTorch operations
-        multipliers = torch.tensor([
-            np.prod(self.output_size[i+1:]) 
-            for i in range(len(self.output_size))
-        ], device=self.device, dtype=torch.float32)
-
-        flat_actions = (actions.float() * multipliers).sum(dim=1)
+        flat_actions = (actions.float() * self.multipliers).sum(dim=1)
         old_log_probs = dist.log_prob(flat_actions)
-        # print("old_log_probs shape:", old_log_probs.shape)
 
         for _ in range(self._n_epochs):
             # print("=== Epoch", i, "===")
-
             values = self._critic.forward(spatial_tensor, global_info)
-
-            # print("\nrewards:", rewards)
-            # print("\nvalues:", values) 
-            # print("\ndones:", dones)
 
             # Advantage
             rewards_to_go, advantages = self.advantage(rewards, values.detach(), dones.detach())
 
-            # print("\nrewards_to_go:", rewards_to_go)
-            # print("\nadvantages:", advantages)
-
-
-            # print("\n=== Actor Update ===")
             self._actor_optimizer.zero_grad()
-
-            # print("4. Computing action probabilities...")
-
             _, new_probs = self.get_action(spatial_tensor, global_info, masks)
-
-            # Flatten logits for softmax
-            # print("old_log_probs shape:", old_log_probs.shape)
-
             dist = Categorical(new_probs)
-            # Replace np.ravel_multi_index with PyTorch operations
-            multipliers = torch.tensor([
-                np.prod(self.output_size[i+1:]) 
-                for i in range(len(self.output_size))
-            ], device=self.device, dtype=torch.float32)
-
-            flat_actions = (actions * multipliers).sum(dim=1)
-            # flat_actions = np.ravel_multi_index(tuple(actions.T), self.output_size)
-            # flat_actions = torch.tensor(flat_actions).to(self.device)
+            flat_actions = (actions * self.multipliers).sum(dim=1)
             new_log_probs = dist.log_prob(flat_actions)
 
             # entropy = probs.entropy()  
 
-            # Ensure old_log_probs and new_log_probs have the same shape as advantages
+            # Actor loss
             ratio = torch.exp(new_log_probs - old_log_probs.detach())
             surrogate1 = ratio * advantages
             surrogate2 = torch.clamp(ratio, 1 - self._clip_ratio, 1 + self._clip_ratio) * advantages
             actor_loss = -torch.min(surrogate1, surrogate2).mean()
-
-            # print("7. Performing actor backprop...")
             actor_loss.backward()
             self._actor_optimizer.step()
 
-            # print("\n=== Critic Update ===") 
-            # print("1. Zeroing critic gradients...")
+            # Critic loss
             self._critic_optimizer.zero_grad()
-            
-            # print("2. Computing critic loss...")
             criterion = nn.MSELoss()
-            loss = criterion(values, rewards_to_go)
-            
-            # print("3. Performing critic backprop...")
-            loss.backward()
+            critic_loss = criterion(values, rewards_to_go)
+            critic_loss.backward()
             self._critic_optimizer.step()
 
             self._log_training_metrics(
                 actor_loss=actor_loss,
-                critic_loss=loss,
+                critic_loss=critic_loss,
                 ratio=ratio,
                 advantages=advantages,
                 values=values,
@@ -532,31 +437,16 @@ class PPOClipAgent:
 
             # Get action logits from actor network
             logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
-            # print("logits shape:", logits.shape)
             
             # Add mask to logits to keep valid actions and mask out invalid ones
             masked_logits = logits.add(masks)  # Using in-place batch addition
-            # print("masked_logits shape:", masked_logits.shape)
 
             # Get action probabilities and select action
             probs = torch.softmax(masked_logits.flatten(start_dim=1), dim=1)  # Keep batch dimension
 
-            # print("probs shape:", probs.shape)
             dist = Categorical(probs)
             flat_indices = dist.sample()  # Will sample for each item in batch
 
-            # print("flat", flat_indices)
-            # print("flat_indices shape:", flat_indices.shape)
-
-            # # Convert flat indices [B, 1] to multi-dimensional indices using torch.unravel_index
-            # actions = torch.stack(
-            #     torch.unravel_index(
-            #         flat_indices,
-            #         self._actor.output_size
-            #     ),
-            #     dim=1
-            # )  # Shape: [B, num_dimensions]
-            # Convert flat indices to multi-dimensional indices using pure PyTorch
             actions = (flat_indices.unsqueeze(1) // self.multipliers) % torch.tensor(
                 self.output_size, device=self.device
             )
