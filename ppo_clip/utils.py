@@ -245,25 +245,34 @@ def reward_fn(gs, active_tribe_id):
 
     reward = 0
 
-    tribes = gs['board']['tribes']
-    for tribe in tribes:
-        if tribe['actorId'] == active_tribe_id: 
-            if tribe['winner'] == "WIN":
-                reward = 1
-            elif tribe['winner'] == "LOSS":
-                reward = -1
-            else:
-                ranking = gs['ranking']
-                for tribe in ranking:
-                    if tribe['id'] == active_tribe_id:
-                        total_possible_counted_cities = max(1, BOARD_LEN * BOARD_LEN / 4)
-                        city_reward_pct = min(tribe['numCities'] / total_possible_counted_cities, 1)
+    # check if win by capitals, meaning we captured all the capitals
+    rankings = gs['ranking']
 
-                        total_possible_counted_production = 150
-                        production_reward_pct = min(tribe['production'] / total_possible_counted_production, 1)
+    total_tribes = len(rankings)
+    tribes_with_no_cities = 0
+    for ranking in rankings:
+        if ranking['numCities'] == 0:
+            tribes_with_no_cities += 1
+    win_by_capitals = tribes_with_no_cities == total_tribes - 1
 
-                        # This can only be max .1, because the real reward is 1 for winning
-                        reward = .05 * city_reward_pct + .05 * production_reward_pct
+    if win_by_capitals:
+        for tribe in gs['board']['tribes']:
+            if tribe['actorId'] == active_tribe_id:
+                reward = [1 if tribe['winner'] == "WIN" else -1]
+                break
+
+    else:
+        for tribe in rankings:
+            if tribe['id'] == active_tribe_id:
+                total_possible_counted_cities = max(1, BOARD_LEN * BOARD_LEN / 4)
+                city_reward_pct = min(tribe['numCities'] / total_possible_counted_cities, 1)
+
+                total_possible_counted_production = 150
+                production_reward_pct = min(tribe['production'] / total_possible_counted_production, 1)
+
+                # This can only be max .1, because the real reward is 1 for winning
+                reward = .05 * city_reward_pct + .05 * production_reward_pct
+                break
 
     return reward
 
