@@ -117,23 +117,14 @@ class PPOClipAgent:
                  output_size, 
                  lr=0.0001, 
                  clip_ratio=0.2, 
-                 batch_size=2048, 
+                 batch_size=2048,
                  n_epochs=3, 
                  gamma=0.99, 
                  gae_lambda=0.95,
-                 checkpoint_path=None):
+                 checkpoint_path=""):
         self.device = DEVICE
         print(f"Using device: {self.device}")
         print("Initializing PPOClipAgent", output_size)
-
-        # Generate a unique directory name based on hyperparameters and timestamp
-        unique_dir_name = (
-            f"{save_path}/lr_{lr}_clip_{clip_ratio}_bs_{batch_size}_epochs_{n_epochs}_"
-            f"gamma_{gamma}_gae_{gae_lambda}_{time.strftime('%Y%m%d-%H%M%S')}"
-        )
-        
-        self._checkpoint_path = checkpoint_path
-        self._save_path = unique_dir_name
 
         self.input_size = input_size
         self.output_size = output_size
@@ -171,6 +162,24 @@ class PPOClipAgent:
         # Tracking information
         self.writer = SummaryWriter(f'ppo_clip/runs/ppo_clip_{time.strftime("%Y%m%d-%H%M%S")}')
         self.update_count = 0
+
+        # Generate a unique directory name based on hyperparameters and timestamp
+        if checkpoint_path:
+            # Extract the base name of the checkpoint file without extension
+            checkpoint_dir = os.path.dirname(checkpoint_path)
+            checkpoint_name = os.path.basename(checkpoint_dir)
+            actions_number = os.path.splitext(os.path.basename(checkpoint_path))[0].split('_')[-1]
+            unique_dir_name = (
+                f"{save_path}/{checkpoint_name}_actions_{actions_number}_{time.strftime('%Y%m%d-%H%M%S')}"
+            )
+        else:
+            unique_dir_name = (
+                f"{save_path}/lr_{lr}_clip_{clip_ratio}_bs_{batch_size}_epochs_{n_epochs}_"
+                f"gamma_{gamma}_gae_{gae_lambda}_{time.strftime('%Y%m%d-%H%M%S')}"
+            )
+        
+        self._checkpoint_path = checkpoint_path
+        self._save_path = unique_dir_name
 
         # Load checkpoint if provided
         if checkpoint_path:
