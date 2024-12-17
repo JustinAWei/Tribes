@@ -16,4 +16,4 @@ map/
 map_elites_*
 __pycache__/
 ppo_clip/runs/
-ppo_clip/weights/
+ppo_clip/checkpoints/

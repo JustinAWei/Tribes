@@ -12,7 +12,7 @@ action_space_shape = (BOARD_LEN, BOARD_LEN, len(action_tuples))
 
 print(action_space_shape)
 
-agent = PPOClipAgent(load_path="ppo_clip/weights", save_path="ppo_clip/weights", input_size=game_state_shape, output_size=action_space_shape)
+agent = PPOClipAgent(save_path="ppo_clip/checkpoints", input_size=game_state_shape, output_size=action_space_shape)
 
 # Create FastAPI app
 app = FastAPI()
