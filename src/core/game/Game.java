@@ -554,7 +554,7 @@ public class Game {
      * @param playerIdx index of the player for which the game state is generated.
      * @return the game state.
      */
-    private GameState getGameState(int playerIdx) {
+    public GameState getGameState(int playerIdx) {
         return gs.copy(playerIdx);
     }
 

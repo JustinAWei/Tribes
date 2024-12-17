@@ -179,20 +179,20 @@ public class Play {
         System.out.println("Loading game states from folder: " + replayFolder);
         List<Game> gameStates = new ArrayList<>();
         File folder = new File(replayFolder);
-    
+
         // Recursively find all game.json files
         List<File> gameFiles = new ArrayList<>();
         findGameFiles(folder, gameFiles);
-    
+
         if (!gameFiles.isEmpty()) {
             // Sort files based on the directory name, which is in the format "{tick}_{activeTribeID}"
             gameFiles.sort(Comparator.comparing(file -> {
                 String[] parts = file.getParentFile().getName().split("_");
                 int tick = Integer.parseInt(parts[0]);
                 int tribeID = Integer.parseInt(parts[1]);
-                return tick * 1000 + tribeID; // Multiply tick by 1000 to ensure it has higher sorting priority
+                return tick * 1000 + tribeID; // Ensure tick has higher sorting priority
             }));
-    
+
             System.out.println("Found " + gameFiles.size() + " game state files.");
             for (File file : gameFiles) {
                 System.out.println("Loading game state from file: " + file.getPath());
@@ -229,12 +229,20 @@ public class Play {
     
             if (frame == null) {
                 wi = new WindowInput();
-                frame = new GUI(game, "Replay", ki, wi, ac, false);
+                frame = new GUI(game, "Replay", ki, wi, ac, true);
                 frame.addWindowListener(wi);
                 frame.addKeyListener(ki);
             }
     
-            game.run(frame, wi, true, 0);
+            // Update the GUI with the current game state
+            frame.update(game.getGameState(-1), null);
+    
+            // Optionally add a delay between frames for better visualization
+            try {
+                Thread.sleep(1000); // 1 second delay
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     
         if (frame != null) {
