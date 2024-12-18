@@ -207,34 +207,6 @@ class PPOClipAgent:
         }
         torch.save(model_dict, agent_save_path)
         
-    # def save_weights(self):
-    #     """Save actor and critic model weights, optimizer states, and hyperparameters to files"""
-    #     print(f"Saving model data to {self._save_path}")
-    #     save_dir = f"{self._save_path}/{self._counter}"
-    #     os.makedirs(save_dir, exist_ok=True)
-    #     
-    #     # Save model weights
-    #     torch.save(self._actor.state_dict(), f"{save_dir}/actor.pth")
-    #     torch.save(self._critic.state_dict(), f"{save_dir}/critic.pth")
-    #     
-    #     # Save optimizer states
-    #     torch.save(self._actor_optimizer.state_dict(), f"{save_dir}/actor_optimizer.pth")
-    #     torch.save(self._critic_optimizer.state_dict(), f"{save_dir}/critic_optimizer.pth")
-    #     
-    #     # Save hyperparameters
-    #     hyperparams = {
-    #         'learning_rate': self._learning_rate,
-    #         'clip_ratio': self._clip_ratio,
-    #         'batch_size': self._batch_size,
-    #         'n_epochs': self._n_epochs,
-    #         # Add any other hyperparameters you want to save
-    #     }
-    #     
-    #     with open(f"{save_dir}/hyperparams.json", 'w') as f:
-    #         json.dump(hyperparams, f, indent=4)
-    #     
-    #     print(f"Saved model data to {save_dir}")
-
     def load_checkpoint(self, checkpoint_path: str):
         """
         Load model weights from a checkpoint file.
@@ -257,37 +229,6 @@ class PPOClipAgent:
         self.output_size = checkpoint['output_size']
         print(f"Loaded checkpoint from {checkpoint_path}")
 
-    # def load_weights(self):
-    #     """Load actor and critic model weights, optimizer states, and hyperparameters from files"""
-    #     try:
-    #         print(f"Loading model data from {self._load_path}")
-    #         
-    #         # Load model weights
-    #         self._actor.load_state_dict(torch.load(f"{self._load_path}/actor.pth", map_location=self.device))
-    #         self._critic.load_state_dict(torch.load(f"{self._load_path}/critic.pth", map_location=self.device))
-    #         
-    #         # Load optimizer states
-    #         self._actor_optimizer.load_state_dict(torch.load(f"{self._load_path}/actor_optimizer.pth", map_location=self.device))
-    #         self._critic_optimizer.load_state_dict(torch.load(f"{self._load_path}/critic_optimizer.pth", map_location=self.device))
-    #         
-    #         # Load hyperparameters
-    #         with open(f"{self._load_path}/hyperparams.json", 'r') as f:
-    #             hyperparams = json.load(f)
-    #             
-    #         # Update instance variables with loaded hyperparameters
-    #         self._learning_rate = hyperparams['learning_rate']
-    #         self._clip_ratio = hyperparams['clip_ratio']
-    #         self._batch_size = hyperparams['batch_size']
-    #         self._n_epochs = hyperparams['n_epochs']
-    #         # Update any other hyperparameters you saved
-    #         
-    #         print(f"Loaded model data from {self._load_path}")
-    #         
-    #     except FileNotFoundError as e:
-    #         print(f"Could not load data from {self._load_path}: {e}")
-    #     except json.JSONDecodeError as e:
-    #         print(f"Could not parse hyperparameters file: {e}")
-    
     def game_ended(self, game_state):
         # who won
         # set the last reward to 1 if win, -1 if lose, 0 if not done
