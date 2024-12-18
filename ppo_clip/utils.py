@@ -24,8 +24,8 @@ def get_actor_x_y(actor_id, gs):
     y = position.get('y', None)
 
     if x is None or y is None:
-        print(f"ACTOR {actor_id} DOESNT EXIST. RETURNING {MASK}, {MASK}")
         pprint(gs)
+        print(f"ACTOR {actor_id} DOESNT EXIST. RETURNING {MASK}, {MASK}")
         return MASK, MASK
 
     # print("actor_id", actor_id)
