@@ -5,7 +5,7 @@ import pprint
 
 MASK = 0
 
-BOARD_LEN = 11
+BOARD_LEN = 8
 def timing_decorator(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
