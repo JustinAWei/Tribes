@@ -1031,7 +1031,7 @@ public class Board {
     boolean getNetworkTilesAt(int x, int y) { return this.tradeNetwork.getTradeNetworkValue(x,y); }
     public int[][] getUnits(){ return this.units; }
     public Types.TERRAIN getTerrainAt(int x, int y){ return terrains[x][y]; }
-    int getUnitIDAt(int x, int y){ return units[x][y]; }
+    public int getUnitIDAt(int x, int y){ return units[x][y]; }
     public void setResourceAt(int x, int y, Types.RESOURCE r){ resources[x][y] =  r; }
     public void setTerrainAt(int x, int y, Types.TERRAIN t){ terrains[x][y] =  t; }
     public void setBuildingAt(int x, int y, Types.BUILDING b){ buildings[x][y] = b; }

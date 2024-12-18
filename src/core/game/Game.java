@@ -292,6 +292,7 @@ public class Game {
             // Save Game
             if (Constants.SAVE_GAME_FREQUENCY != -1 && gameIndex % Constants.SAVE_GAME_FREQUENCY == 0)
                 GameSaver.writeTurnFile(gs, getBoard(), seed);
+                
 
             //it may be that this player won the game, no more playing.
             if (gameOver()) {
@@ -453,7 +454,7 @@ public class Game {
         Tribe[] tribes = gs.getBoard().getTribes();
 
         TreeSet<TribeResult> ranking = gs.getCurrentRanking();
-        System.out.println(gs.getTick() + "; Game Results: ");
+        System.out.println(gs.getTick() + "; Game Results for seed " + seed + " :");
         int rank = 1;
         for (TribeResult tr : ranking) {
             int tribeId = tr.getId();

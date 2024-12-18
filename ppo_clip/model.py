@@ -315,7 +315,7 @@ class PPOClipAgent:
 
             self._update()
 
-            if self._counter % (5 * self._batch_size) == 0:
+            if self._counter % (25 * self._batch_size) == 0:
                 self.save_checkpoint()
 
             self._trajectories = copy.deepcopy(self._base_trajectories)

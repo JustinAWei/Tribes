@@ -127,32 +127,55 @@ public class PPOAgent extends Agent {
                     }
                 }
             } else if (a instanceof UnitAction) {
-                Unit unit = board.getUnitAt(x1, y1);
-                int unitId = unit.getActorId();
-                if (unitId == ((UnitAction) a).getUnitId()) {
-                    if (actionType == Types.ACTION.ATTACK) {
-                        // targetId needs to match x2,y2
-                        Attack attack = (Attack) a;
-                        int targetId = attack.getTargetId();
-                        Actor actor = board.getActor(targetId);
-                        boolean targetMatches = actor.getPosition().x == x2 && actor.getPosition().y == y2;
-                        if (targetMatches) {
-                            filteredActions.add(a);
+                try {
+                    Unit unit = board.getUnitAt(x1, y1);
+                    int unitId = unit.getActorId();
+                    if (unitId == ((UnitAction) a).getUnitId()) {
+                        if (actionType == Types.ACTION.ATTACK) {
+                            // targetId needs to match x2,y2
+                            Attack attack = (Attack) a;
+                            int targetId = attack.getTargetId();
+                            Actor actor = board.getActor(targetId);
+                            boolean targetMatches = actor.getPosition().x == x2 && actor.getPosition().y == y2;
+                            if (targetMatches) {
+                                filteredActions.add(a);
+                            }
                         }
-                    }
-                    else if (actionType == Types.ACTION.MOVE) {
-                        // destination needs to match x2,y2
-                        Move move = (Move) a;
-                        boolean destinationMatches = move.getDestination().x == x2
-                                && move.getDestination().y == y2;
+                        else if (actionType == Types.ACTION.MOVE) {
+                            // destination needs to match x2,y2
+                            Move move = (Move) a;
+                            boolean destinationMatches = move.getDestination().x == x2
+                                    && move.getDestination().y == y2;
 
-                        if (destinationMatches) {
+                            if (destinationMatches) {
+                                filteredActions.add(a);
+                            }
+                        }
+                        else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN || actionType == Types.ACTION.DISBAND || actionType == Types.ACTION.UPGRADE_BOAT || actionType == Types.ACTION.UPGRADE_SHIP) {
                             filteredActions.add(a);
                         }
                     }
-                    else if (actionType == Types.ACTION.CAPTURE || actionType == Types.ACTION.RECOVER || actionType == Types.ACTION.EXAMINE || actionType == Types.ACTION.MAKE_VETERAN || actionType == Types.ACTION.DISBAND || actionType == Types.ACTION.UPGRADE_BOAT || actionType == Types.ACTION.UPGRADE_SHIP) {
-                        filteredActions.add(a);
+                } catch (Exception e) {
+                    System.out.println("Error occurred with action: " + a);
+                    System.out.println("Coordinates: x1 = " + x1 + ", y1 = " + y1);
+                    System.out.println("Board details:");
+                    System.out.println("Active Tribe ID: " + board.getActiveTribeID());
+                    System.out.println("Terrain at " + x1 + "," + y1 + ": " + board.getTerrainAt(x1, y1));
+                    System.out.println("Resource at " + x1 + "," + y1 + ": " + board.getResourceAt(x1, y1)); 
+                    System.out.println("Building at " + x1 + "," + y1 + ": " + board.getBuildingAt(x1, y1));
+                    System.out.println("City ID at " + x1 + "," + y1 + ": " + board.getCityIdAt(x1, y1));
+                    System.out.println("Unit ID at " + x1 + "," + y1 + ": " + board.getUnitIDAt(x1, y1));
+                    System.out.println("Unit array at " + x1 + "," + y1 + ": " + board.getUnits()[x1][y1]);
+                    System.out.println("Full units array:");
+                    int[][] units = board.getUnits();
+                    for(int i = 0; i < units.length; i++) {
+                        for(int j = 0; j < units[i].length; j++) {
+                            if(units[i][j] != 0) {
+                                System.out.println("Unit at " + i + "," + j + ": " + units[i][j]);
+                            }
+                        }
                     }
+                    e.printStackTrace();
                 }
             }
             // Research
