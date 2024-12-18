@@ -1,6 +1,7 @@
 import torch
 import joblib
 import time
+import pprint
 
 MASK = 0
 
@@ -18,12 +19,14 @@ def get_actor_x_y(actor_id, gs):
     # in board -> gameActors
     game_actors = gs.get('board', {}).get('gameActors', {})
     actor = game_actors.get(str(actor_id), {})
-    if not actor:
-        return MASK, MASK
-
     position = actor.get('position', {})
-    x = position.get('x', 0)
-    y = position.get('y', 0)
+    x = position.get('x', None)
+    y = position.get('y', None)
+
+    if x is None or y is None:
+        print(f"ACTOR {actor_id} DOESNT EXIST. RETURNING {MASK}, {MASK}")
+        pprint(gs)
+        return MASK, MASK
 
     # print("actor_id", actor_id)
     # print(f"x: {x} | y: {y}")
