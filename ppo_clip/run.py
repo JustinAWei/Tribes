@@ -29,7 +29,7 @@ async def end_game(request: Request):
 
     data = await request.json()
 
-    agent.game_ended([data['gameState']])
+    agent.game_ended(data['gameState'])
 
     if current_game_id in action_type_stats:
         current_tick = data['gameState']['tick']

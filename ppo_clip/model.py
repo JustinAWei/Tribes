@@ -117,7 +117,7 @@ class PPOClipAgent:
                  output_size, 
                  lr=0.0001, 
                  clip_ratio=0.2, 
-                 batch_size=2048,
+                 batch_size=4,
                  n_epochs=3, 
                  gamma=0.99, 
                  gae_lambda=0.95,
@@ -157,6 +157,7 @@ class PPOClipAgent:
             "masks": []
         }
         self._trajectories = copy.deepcopy(self._base_trajectories)
+        self._current_game_trajectories = copy.deepcopy(self._base_trajectories)
         self._counter = 0
 
         # Tracking information
@@ -206,7 +207,7 @@ class PPOClipAgent:
             'output_size': self.output_size 
         }
         torch.save(model_dict, agent_save_path)
-        
+
     def load_checkpoint(self, checkpoint_path: str):
         """
         Load model weights from a checkpoint file.
@@ -229,7 +230,9 @@ class PPOClipAgent:
         self.output_size = checkpoint['output_size']
         print(f"Loaded checkpoint from {checkpoint_path}")
 
-    def game_ended(self, game_state):
+    def game_ended(self, end_game_state):
+        self._counter += 1
+
         # who won
         # set the last reward to 1 if win, -1 if lose, 0 if not done
         # last reward is the reward for the last end turn
@@ -237,24 +240,56 @@ class PPOClipAgent:
 
         print("=== Game Ended ===")
 
-        # Handle each game state in the batch
-        for game_idx, gs in enumerate(game_state):
-            tribes = gs['board']['tribes']
-            for tribe in tribes:
-                active_tribe_id = tribe['actorId']
-                # find the last action for the tribe in global_info
-                for i in range(len(self._trajectories["global_info"])-1, -1, -1):
-                    global_info = self._trajectories["global_info"][i]
-                    if global_info[game_idx, 0] == active_tribe_id:
-                        self._trajectories["rewards"][i] = torch.tensor([[reward_fn(gs, active_tribe_id)]], device=self.device)
-                        print("Setting reward for tribe", active_tribe_id, "at index", i, "to", self._trajectories["rewards"][i])
-                        break
-
         # the last turn for the tribe that didn't win should be set to 0
     
+        # Convert list of tensors to single tensor for easier manipulation
+        global_info_tensor = torch.cat(self._current_game_trajectories["global_info"], dim=0)
+
+        # Get tribe IDs from first column
+        tribe_ids = global_info_tensor[:, 0]
+
+        # Get indices that would sort by tribe ID while preserving order
+        sorted_indices = torch.argsort(tribe_ids, stable=True)
+        
+        # Apply sorting to all trajectory components
+        self._current_game_trajectories["spatial_tensor"] = [self._current_game_trajectories["spatial_tensor"][i] for i in sorted_indices]
+        self._current_game_trajectories["global_info"] = [self._current_game_trajectories["global_info"][i] for i in sorted_indices]
+        self._current_game_trajectories["actions"] = [self._current_game_trajectories["actions"][i] for i in sorted_indices]
+        self._current_game_trajectories["rewards"] = [self._current_game_trajectories["rewards"][i] for i in sorted_indices]
+        self._current_game_trajectories["probs"] = [self._current_game_trajectories["probs"][i] for i in sorted_indices]
+        self._current_game_trajectories["masks"] = [self._current_game_trajectories["masks"][i] for i in sorted_indices]
+
+        # but keep the length, with last element being 0
+        self._current_game_trajectories["rewards"] = [self._current_game_trajectories["rewards"][i] for i in range(1, len(self._current_game_trajectories["rewards"]))] + [torch.tensor([[0]], device=self.device)]
+
+        # Handle each game state in the batch
+        tribes = end_game_state['board']['tribes']
+        for tribe in tribes:
+            active_tribe_id = tribe['actorId']
+            # find the last action for the tribe in global_info
+            for i in range(len(self._current_game_trajectories["global_info"])-1, -1, -1):
+                global_info = self._current_game_trajectories["global_info"][i]
+                print("global_info[0][0]", global_info[0][0])
+                if global_info[0][0] == active_tribe_id:
+                    self._current_game_trajectories["rewards"][i] = torch.tensor([[reward_fn(end_game_state, active_tribe_id)]], device=self.device)
+                    print("Setting reward for tribe", active_tribe_id, "at index", i, "to", self._current_game_trajectories["rewards"][i])
+                    break
+
+        # extend element wise
+        self._trajectories = {key: self._trajectories[key] + self._current_game_trajectories[key] for key in self._trajectories}
+        self._current_game_trajectories = copy.deepcopy(self._base_trajectories)
+
+        if self._counter % self._batch_size == 0:
+
+            self._update()
+
+            if self._counter % (5 * self._batch_size) == 0:
+                self.save_checkpoint()
+
+            self._trajectories = copy.deepcopy(self._base_trajectories)
+
     # @profile
     def run(self, id, game_state, valid_actions):
-        self._counter += 1
 
         # game_states = [batch_size, 1]
         # valid action = [batch_size, N, 6]
@@ -277,48 +312,18 @@ class PPOClipAgent:
         # Collect trajectory
         actions, probs = self.get_action(spatial_tensor, global_info, masks)
 
-        self._trajectories["spatial_tensor"].append(spatial_tensor)
-        self._trajectories["global_info"].append(global_info)
-        self._trajectories["actions"].append(actions)
+        self._current_game_trajectories["spatial_tensor"].append(spatial_tensor)
+        self._current_game_trajectories["global_info"].append(global_info)
+        self._current_game_trajectories["actions"].append(actions)
 
-        # Rewards are calculated after the game ends
-        self._trajectories["rewards"].append(torch.tensor([[0]], device=self.device))
-        self._trajectories["probs"].append(probs)
-        self._trajectories["masks"].append(masks)
+        active_tribe_id = global_info[0, 0]
 
-        # if self._counter % 512 == 0:
-        #     print("=== Trajectory Shapes ===")
-        #     print("spatial_tensor shape:", len(self._trajectories["spatial_tensor"]), self._trajectories["spatial_tensor"][0].shape)
-        #     print("global_info shape:", len(self._trajectories["global_info"]), self._trajectories["global_info"][0].shape)
-        #     print("actions shape:", len(self._trajectories["actions"]), self._trajectories["actions"][0].shape) 
-        #     print("rewards shape:", len(self._trajectories["rewards"]), self._trajectories["rewards"][0].shape)
-        #     print("probs shape:", len(self._trajectories["probs"]), self._trajectories["probs"][0].shape)
-        #     print("mask shape:", len(self._trajectories["masks"]), self._trajectories["masks"][0].shape)
-        
-        if self._counter % self._batch_size == 0:
-            # Convert list of tensors to single tensor for easier manipulation
-            global_info_tensor = torch.cat(self._trajectories["global_info"], dim=0)
-            
-            # Get tribe IDs from first column
-            tribe_ids = global_info_tensor[:, 0]
+        # These rewards are one behind. 
+        # TODO: make its own var so no confusion
+        self._current_game_trajectories["rewards"].append(torch.tensor([[reward_fn(game_state, active_tribe_id)]], device=self.device))
+        self._current_game_trajectories["probs"].append(probs)
+        self._current_game_trajectories["masks"].append(masks)
 
-            # Get indices that would sort by tribe ID while preserving order
-            sorted_indices = torch.argsort(tribe_ids, stable=True)
-            
-            # Apply sorting to all trajectory components
-            self._trajectories["spatial_tensor"] = [self._trajectories["spatial_tensor"][i] for i in sorted_indices]
-            self._trajectories["global_info"] = [self._trajectories["global_info"][i] for i in sorted_indices]
-            self._trajectories["actions"] = [self._trajectories["actions"][i] for i in sorted_indices]
-            self._trajectories["rewards"] = [self._trajectories["rewards"][i] for i in sorted_indices]
-            self._trajectories["probs"] = [self._trajectories["probs"][i] for i in sorted_indices]
-            self._trajectories["masks"] = [self._trajectories["masks"][i] for i in sorted_indices]
-
-            self._update()
-
-            if self._counter % (5 * self._batch_size) == 0:
-                self.save_checkpoint()
-
-            self._trajectories = copy.deepcopy(self._base_trajectories)
 
         return actions[0].tolist()
 

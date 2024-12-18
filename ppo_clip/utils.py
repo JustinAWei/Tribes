@@ -277,6 +277,7 @@ def reward_fn(gs, active_tribe_id):
                 reward = .05 * city_reward_pct + .05 * production_reward_pct
                 break
 
+    print("reward", active_tribe_id, reward)
     return reward
 
 
