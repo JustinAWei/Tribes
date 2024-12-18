@@ -85,7 +85,9 @@ async def receive_data(request: Request):
         }
 
     except Exception as e:
+        import traceback
         print(f"Error: {e}")
+        print(f"Error occurred at: {traceback.format_exc()}")
         print("spatial_tensor shape:", len(agent._trajectories["spatial_tensor"]), agent._trajectories["spatial_tensor"][0].shape)
         print("global_info shape:", len(agent._trajectories["global_info"]), agent._trajectories["global_info"][0].shape)
         print("actions shape:", len(agent._trajectories["actions"]), agent._trajectories["actions"][0].shape) 

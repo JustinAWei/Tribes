@@ -261,7 +261,7 @@ def reward_fn(gs, active_tribe_id):
     if win_by_capitals:
         for tribe in gs['board']['tribes']:
             if tribe['actorId'] == active_tribe_id:
-                reward = [1 if tribe['winner'] == "WIN" else -1]
+                reward = 1.0 if tribe['winner'] == "WIN" else -1.0
                 break
 
     else:
