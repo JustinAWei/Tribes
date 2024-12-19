@@ -171,6 +171,7 @@ public class Board {
     public Board copy(boolean partialObs, int playerId) {
         Board copyBoard = new Board();
         copyBoard.size = this.size;
+        // System.out.println("Tribes length" + this.tribes.length);
         copyBoard.tribes = new Tribe[this.tribes.length];
         copyBoard.terrains = new Types.TERRAIN[size][size];
         copyBoard.resources = new Types.RESOURCE[size][size];

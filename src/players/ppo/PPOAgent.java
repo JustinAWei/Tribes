@@ -51,8 +51,8 @@ public class PPOAgent extends Agent {
 
         String response = postRequestSender.sendPostRequest(url, jsonObject.toString());
         JSONObject jsonResponse = new JSONObject(response);
-        System.out.println("Parsing response!");
-        System.out.println(jsonResponse);
+        // System.out.println("Parsing response!");
+        // System.out.println(jsonResponse);
 
         // turn into array
         JSONArray jsonArray = (JSONArray) jsonResponse.get("action");
@@ -69,7 +69,7 @@ public class PPOAgent extends Agent {
 
         Integer actionId = (Integer) jsonArray.get(4);
         Types.ACTION actionType = Types.ACTION.values()[actionId];
-        System.out.println("Action type: " + actionType);
+        // System.out.println("Action type: " + actionType);
 
         int typeInfo = (Integer) jsonArray.get(5);
 
@@ -81,16 +81,19 @@ public class PPOAgent extends Agent {
         ArrayList<Action> filteredActions = new ArrayList<>();
 
         for (Action a : allActions) {
-            System.out.println("Checking action: " + a);
-            System.out.println("Action type from action: " + a.getActionType());
-            System.out.println("Action type we're looking for: " + actionType);
-            System.out.println("Are they equal? " + (a.getActionType() == actionType));
+            // System.out.println("Checking action: " + a);
+            // System.out.println("Action type from action: " + a.getActionType());
+            // System.out.println("Action type we're looking for: " + actionType);
+            // System.out.println("Are they equal? " + (a.getActionType() == actionType));
 
             if (a.getActionType() != actionType) {
                 continue;
             }
             if (a instanceof CityAction) {
+                // System.out.println("Getting city ID at coordinates: " + x1 + ", " + y1);
                 int cityId = board.getCityIdAt(x1,y1);
+                // System.out.println("City ID at location: " + cityId);
+                // System.out.println("Action city ID: " + ((CityAction) a).getCityId());
                 if (cityId == ((CityAction) a).getCityId()) {
                     // Build
                     if (actionType == Types.ACTION.BUILD) {
@@ -109,9 +112,9 @@ public class PPOAgent extends Agent {
                         Types.UNIT unitTypeInfo = Types.UNIT.getTypeByKey(typeInfo);
                         if (unitType == unitTypeInfo) {
                             filteredActions.add(a);
-                            System.out.println("Equal: " + unitType + " " + unitTypeInfo);
+                            // System.out.println("Equal: " + unitType + " " + unitTypeInfo);
                         } else {
-                            System.out.println("Not equal: " + unitType + " " + unitTypeInfo);
+                            // System.out.println("Not equal: " + unitType + " " + unitTypeInfo);
                         }
                     }
                     else if (actionType == Types.ACTION.RESOURCE_GATHERING) {
@@ -119,7 +122,7 @@ public class PPOAgent extends Agent {
                         ResourceGathering resourceGathering = (ResourceGathering) a;
                         boolean targetPosMatches = resourceGathering.getTargetPos().x == x2
                                 && resourceGathering.getTargetPos().y == y2;
-                        System.out.println("Target pos: " + resourceGathering.getTargetPos().x + ", " + resourceGathering.getTargetPos().y);
+                        // System.out.println("Target pos: " + resourceGathering.getTargetPos().x + ", " + resourceGathering.getTargetPos().y);
                         if (targetPosMatches) {
                             filteredActions.add(a);
                         }
@@ -212,8 +215,8 @@ public class PPOAgent extends Agent {
             }
         }
 
-        System.out.println("Filtered actions: " + filteredActions);
-        System.out.println("All actions: " + allActions);
+        // System.out.println("Filtered actions: " + filteredActions);
+        // System.out.println("All actions: " + allActions);
 
         return filteredActions.getFirst();
     }

@@ -12,8 +12,8 @@ action_space_shape = (BOARD_LEN, BOARD_LEN, len(action_tuples))
 
 print(action_space_shape)
 
-# checkpoint_path = "ppo_clip/checkpoints/lr_0.0001_clip_0.2_bs_2048_epochs_3_gamma_0.99_gae_0.95_20241216-183629_actions_757760_20241217-125607/actions_450560.pth"
-checkpoint_path = None
+checkpoint_path = "ppo_clip/checkpoints/lr_0.0001_clip_0.2_bs_2048_epochs_3_gamma_0.99_gae_0.95_20241216-183629_actions_757760_450560_20241217-183225/actions_20480.pth"
+# checkpoint_path = None
 agent = PPOClipAgent(save_path="ppo_clip/checkpoints", input_size=game_state_shape, output_size=action_space_shape, checkpoint_path=checkpoint_path)
 
 # Create FastAPI app
@@ -66,10 +66,10 @@ async def receive_data(request: Request):
         
         valid_actions = filter_actions(gs)
 
-        # Select random action from valid actions
-        action = random.choice(valid_actions)
+        # # Select random action from valid actions
+        # action = random.choice(valid_actions)
         
-        # action = agent.run(0, gs, valid_actions)
+        action = agent.run(0, gs, valid_actions)
         # print("Action: ", action)
 
         # convert last action to (action_type, extra_var)
