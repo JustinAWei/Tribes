@@ -347,8 +347,10 @@ public class Board {
         Types.BUILDING b = buildings[x][y];
         if (terrain == SHALLOW_WATER || terrain == DEEP_WATER) {
 
-            if(toPush.getType().isWaterUnit())
+            if(toPush.getType().isWaterUnit()) {
+                moveUnit(toPush, startX, startY, x, y, r);
                 return true;
+            }
 
             if (b == Types.BUILDING.PORT) {
                 City c = getCityInBorders(x, y);

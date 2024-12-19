@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 import uvicorn
 import json
 from utils import filter_actions, action_tuples, index_to_action_tuple, ACTION_TYPES
-
+import random
 from model import PPOClipAgent
 from utils import BOARD_LEN
 from pprint import pprint
@@ -65,8 +65,11 @@ async def receive_data(request: Request):
         # BOARD_SIZE = BOARD_LEN ** 2
         
         valid_actions = filter_actions(gs)
+
+        # Select random action from valid actions
+        action = random.choice(valid_actions)
         
-        action = agent.run(0, gs, valid_actions)
+        # action = agent.run(0, gs, valid_actions)
         # print("Action: ", action)
 
         # convert last action to (action_type, extra_var)

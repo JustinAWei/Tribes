@@ -98,6 +98,13 @@ public class Play {
 
                         // 1. Play one game with visuals using the Level Generator:
                         if (runMode.equalsIgnoreCase("PlayLG")) {
+                            System.out.println("Playing LG game: " + tribes + " " + levelSeed + " " + playerTypes + " " + gameMode + " " + stop + " " + gameIndex);
+                            for (Types.TRIBE tribe : tribes) {
+                                System.out.println("Playing LG game with tribe: " + tribe.getName());
+                            }
+                            System.out.println("Number of player types: " + playerTypes.length);
+                            System.out.println("Player types: " + Arrays.toString(playerTypes));
+
                             play(tribes, levelSeed, playerTypes, gameMode, stop, gameIndex);
 
                         // 2. Play one game with visuals from a specific level file:
