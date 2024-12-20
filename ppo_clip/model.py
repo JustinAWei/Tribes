@@ -13,7 +13,37 @@ from torch.utils.tensorboard import SummaryWriter
 import time
 import json
 
-DEVICE = 'mps' if torch.backends.mps.is_available() else 'cpu'
+# DEVICE = 'mps' if torch.backends.mps.is_available() else 'cpu'
+DEVICE = 'cpu' # for trajectory collection
+TRAINING_DEVICE = 'mps' if torch.backends.mps.is_available() else 'cpu' # for training
+
+# Network architecture constants
+INITIAL_CHANNELS = 27        # Input channels for spatial features
+CONV_CHANNELS = 128          # Number of channels in conv layers
+GLOBAL_INPUT_SIZE = 2       # Size of global features input
+GLOBAL_HIDDEN_SIZE = 64
+GLOBAL_OUTPUT_SIZE = 32
+
+POLICY_HIDDEN_SIZES = [512, 256, 128]
+VALUE_HIDDEN_SIZES = [256, 64]
+
+# Calculate spatial dimensions after convolutions
+def calculate_conv_output_size(size, kernel_size=3, stride=1, padding=1):
+    return (size + 2*padding - kernel_size)//stride + 1
+
+def calculate_spatial_size(board_size):
+    # First two conv layers (stride=1) maintain size
+    size = board_size
+    # First stride-2 conv
+    size = calculate_conv_output_size(size, stride=2)
+    # Second stride-2 conv
+    size = calculate_conv_output_size(size, stride=2)
+    return size
+
+BOARD_SIZE = 11  # This should match your game board size
+FINAL_SPATIAL_SIZE = calculate_spatial_size(BOARD_SIZE)
+SPATIAL_FLAT_SIZE = CONV_CHANNELS * FINAL_SPATIAL_SIZE * FINAL_SPATIAL_SIZE
+COMBINED_FEATURE_SIZE = SPATIAL_FLAT_SIZE + GLOBAL_OUTPUT_SIZE
 
 # To reduce duplicate code, this is used for both the actor and the critic
 class FeatureExtractor(nn.Module):
@@ -22,93 +52,79 @@ class FeatureExtractor(nn.Module):
         
         # CNN for spatial features
         self.conv_net = nn.Sequential(
-            nn.Conv2d(in_channels=27, out_channels=32, kernel_size=3, padding=1),
+            nn.Conv2d(INITIAL_CHANNELS, CONV_CHANNELS, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=1),
+            nn.Conv2d(CONV_CHANNELS, CONV_CHANNELS, kernel_size=3, padding=1),
             nn.ReLU(),
-        )
-        
-        # MLP for global features
-        self.global_net = nn.Sequential(
-            nn.Linear(2, 16),
+            nn.Conv2d(CONV_CHANNELS, CONV_CHANNELS, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.Linear(16, 8),
+            nn.Conv2d(CONV_CHANNELS, CONV_CHANNELS, kernel_size=3, stride=2, padding=1),
             nn.ReLU()
         )
-        
+
+        # MLP for global features processing
+        self.global_net = nn.Sequential(
+            nn.Linear(GLOBAL_INPUT_SIZE, GLOBAL_HIDDEN_SIZE),
+            nn.ReLU(),
+            nn.Linear(GLOBAL_HIDDEN_SIZE, GLOBAL_OUTPUT_SIZE),
+            nn.ReLU()
+        )
     
     def forward(self, spatial, global_features):
-        # Rearrange spatial for CNN
-        spatial = spatial.permute(0, 3, 1, 2)  # -> (batch_size, 27, board_size, board_size)
-        
-        # Process spatial
+        spatial = spatial.permute(0, 3, 1, 2)
         spatial_out = self.conv_net(spatial)
-        spatial_out = spatial_out.flatten(start_dim=1)  # Flatten from the second dimension onwards
-
-        # Process global
-        global_out = self.global_net(global_features)  # -> (batch_size, 16)
-        
-        # Combine
-        combined = torch.cat([spatial_out, global_out], dim=1)  # Concatenate along the feature dimension
-        return combined
+        spatial_out = spatial_out.flatten(start_dim=1)
+        global_out = self.global_net(global_features)
+        return torch.cat([spatial_out, global_out], dim=1)
 
 class Actor(nn.Module):
     def __init__(self, board_size, output_size):
         super(Actor, self).__init__()
-        self.device = DEVICE
         self.feature_extractor = FeatureExtractor()
         self.output_size = output_size
         
-        spatial_flat_size = 32 * board_size * board_size
-        combined_size = spatial_flat_size + 8
-
-        # Flatten output size since it's like (3, 22, 11, 11, 11, 11, 24)
-        flat_output_size = math.prod(output_size)
+        # Calculate flattened output size
+        self.flat_output_size = math.prod(output_size)
         
-        self.policy_head = nn.Sequential(
-            nn.Linear(combined_size, 16),
-            nn.ReLU(),
-            nn.Linear(16, flat_output_size)
-        )
-
+        # Deeper policy head
+        layers = []
+        input_size = COMBINED_FEATURE_SIZE
+        for hidden_size in POLICY_HIDDEN_SIZES:
+            layers.extend([
+                nn.Linear(input_size, hidden_size),
+                nn.ReLU()
+            ])
+            input_size = hidden_size
+        layers.append(nn.Linear(input_size, self.flat_output_size))
+        
+        self.policy_head = nn.Sequential(*layers)
     
     def forward(self, spatial, global_features):
-        # Ensure inputs are on GPU
-        spatial = spatial.to(self.device)
-        global_features = global_features.to(self.device)
-
-        # print("=== Actor Forward ===")
         combined = self.feature_extractor(spatial, global_features)
         output = self.policy_head(combined)
-        # Reshape the output to the desired dimensions
-        return output.view(-1, *self.output_size)  # Ensure batch dimension is preserved
+        return output.view(-1, *self.output_size)
 
 class Critic(nn.Module):
     def __init__(self, board_size):
         super(Critic, self).__init__()
-        self.device = DEVICE
         self.feature_extractor = FeatureExtractor()
         
-        spatial_flat_size = 32 * board_size * board_size
-        combined_size = spatial_flat_size + 8
+        # Build value head layers dynamically
+        layers = []
+        input_size = COMBINED_FEATURE_SIZE
+        for hidden_size in VALUE_HIDDEN_SIZES:
+            layers.extend([
+                nn.Linear(input_size, hidden_size),
+                nn.ReLU()
+            ])
+            input_size = hidden_size
+        layers.append(nn.Linear(input_size, 1))
         
-        self.value_head = nn.Sequential(
-            nn.Linear(combined_size, 32),
-            nn.ReLU(),
-            nn.Linear(32, 16),
-            nn.ReLU(),
-            nn.Linear(16, 1)  # Output a single value
-        )
-
+        self.value_head = nn.Sequential(*layers)
     
     def forward(self, spatial, global_features):
-        # Ensure inputs are on GPU
-        spatial = spatial.to(self.device)
-        global_features = global_features.to(self.device)
-        
-        # print("=== Critic Forward ===")
         combined = self.feature_extractor(spatial, global_features)
-        return self.value_head(combined)  # Output should be (batch_size, 1)
+        return self.value_head(combined)
 
 class PPOClipAgent:
     def __init__(self, 
@@ -116,21 +132,21 @@ class PPOClipAgent:
                  input_size, 
                  output_size, 
                  lr=0.0001, 
-                 clip_ratio=0.2, 
+                 clip_ratio=0.15, 
                  batch_size=2048,
-                 n_epochs=3, 
-                 gamma=0.99, 
-                 gae_lambda=0.95,
+                 n_epochs=5, 
+                 gamma=0.9999, 
+                 gae_lambda=0.75,
                  checkpoint_path=""):
         self.device = DEVICE
-        print(f"Using device: {self.device}")
-        print("Initializing PPOClipAgent", output_size)
+        self.training_device = TRAINING_DEVICE
+        print(f"Using device: {self.device} for inference, {self.training_device} for training")
 
         self.input_size = input_size
         self.output_size = output_size
 
         self._actor = Actor(BOARD_LEN, self.output_size).to(self.device)
-        self._critic = Critic(BOARD_LEN).to(self.device).to(self.device)
+        self._critic = Critic(BOARD_LEN).to(self.device)
 
         self._learning_rate = lr
 
@@ -179,18 +195,15 @@ class PPOClipAgent:
             )
         
         self._checkpoint_path = checkpoint_path
-        self._save_path = unique_dir_name
+        self._save_dir = unique_dir_name
+        os.makedirs(self._save_dir, exist_ok=True)
 
         # Load checkpoint if provided
         if checkpoint_path:
             self.load_checkpoint(self._checkpoint_path)
     
     def save_checkpoint(self):
-        checkpoint_dir = f"{self._save_path}"
-        if not os.path.exists(checkpoint_dir):
-            os.makedirs(checkpoint_dir, exist_ok=True)
-            
-        agent_save_path = os.path.join(checkpoint_dir, f"actions_{self._counter}.pth")
+        agent_save_path = os.path.join(self._save_dir, f"actions_{self._counter}.pth")
         model_dict = {
             'actor': self._actor.state_dict(),
             'critic': self._critic.state_dict(),
@@ -275,7 +288,7 @@ class PPOClipAgent:
                 masks[batch_idx][action[0]][action[1]][action[2]] = 0
 
         # Collect trajectory
-        actions, probs = self.get_action(spatial_tensor, global_info, masks)
+        actions, probs = self.get_action(spatial_tensor, global_info, masks, device=self.device)
 
         self._trajectories["spatial_tensor"].append(spatial_tensor)
         self._trajectories["global_info"].append(global_info)
@@ -323,7 +336,7 @@ class PPOClipAgent:
         return actions[0].tolist()
 
     
-    def advantage(self, rewards, values, dones):
+    def calculate_advantages(self, rewards, values, dones):
         """
         Calculate advantage using Generalized Advantage Estimation (GAE)
         
@@ -337,6 +350,11 @@ class PPOClipAgent:
         Returns:
             torch.Tensor: Advantages for each timestep
         """
+        # Move tensors to CPU for calculation — much faster than GPU
+        rewards = rewards.cpu()
+        values = values.cpu()
+        dones = dones.cpu()
+
         # print("=== Advantage ===")
         advantages = torch.zeros_like(rewards)
         last_advantage = 0
@@ -360,23 +378,31 @@ class PPOClipAgent:
             
         # Compute the returns as the sum of the advantages and the values since A = Q - V (to be used as target for the critic)
         returns = advantages + values
-        return returns, advantages
+
+        # Move results back to the original device
+        return returns.to(self.training_device), advantages.to(self.training_device)
 
     
     # @profile
     def _update(self):
-        # Move tensors to GPU
-        probs = torch.cat(self._trajectories["probs"], dim=0).to(self.device).float()
-        actions = torch.cat(self._trajectories["actions"], dim=0).to(self.device).float()
-        rewards = torch.cat(self._trajectories["rewards"], dim=0).to(self.device).float()
-        dones = (rewards != 0).float().to(self.device)
-        spatial_tensor = torch.cat(self._trajectories["spatial_tensor"], dim=0).to(self.device).float()
-        global_info = torch.cat(self._trajectories["global_info"], dim=0).to(self.device).float()
-        masks = torch.cat(self._trajectories["masks"], dim=0).to(self.device).float()
+        # Move models to training device before update
+        self._actor.to(self.training_device)
+        self._critic.to(self.training_device)
 
+        # Move tensors to training device
+        probs = torch.cat(self._trajectories["probs"], dim=0).to(self.training_device).float()
+        actions = torch.cat(self._trajectories["actions"], dim=0).to(self.training_device).float()
+        rewards = torch.cat(self._trajectories["rewards"], dim=0).to(self.training_device).float()
+        dones = (rewards != 0).float().to(self.training_device)
+        spatial_tensor = torch.cat(self._trajectories["spatial_tensor"], dim=0).to(self.training_device).float()
+        global_info = torch.cat(self._trajectories["global_info"], dim=0).to(self.training_device).float()
+        masks = torch.cat(self._trajectories["masks"], dim=0).to(self.training_device).float()
+
+        # Move multipliers to training device
+        multipliers = self.multipliers.to(self.training_device)
 
         dist = Categorical(probs)
-        flat_actions = (actions.float() * self.multipliers).sum(dim=1)
+        flat_actions = (actions.float() * multipliers).sum(dim=1)
         old_log_probs = dist.log_prob(flat_actions)
 
         for _ in range(self._n_epochs):
@@ -384,12 +410,12 @@ class PPOClipAgent:
             values = self._critic.forward(spatial_tensor, global_info)
 
             # Advantage
-            rewards_to_go, advantages = self.advantage(rewards, values.detach(), dones.detach())
+            rewards_to_go, advantages = self.calculate_advantages(rewards, values.detach(), dones.detach())
 
             self._actor_optimizer.zero_grad()
-            _, new_probs = self.get_action(spatial_tensor, global_info, masks)
+            _, new_probs = self.get_action(spatial_tensor, global_info, masks, device=self.training_device)
             dist = Categorical(new_probs)
-            flat_actions = (actions * self.multipliers).sum(dim=1)
+            flat_actions = (actions * multipliers).sum(dim=1)
             new_log_probs = dist.log_prob(flat_actions)
 
             # entropy = probs.entropy()  
@@ -408,26 +434,43 @@ class PPOClipAgent:
             critic_loss = criterion(values, rewards_to_go)
             critic_loss.backward()
             self._critic_optimizer.step()
+            
+            if self._counter % (self._batch_size * 5) == 0:
+                self._log_training_metrics(
+                    actor_loss=actor_loss,
+                    critic_loss=critic_loss,
+                    ratio=ratio,
+                    advantages=advantages,
+                    values=values,
+                    rewards_to_go=rewards_to_go
+                )
 
-            self._log_training_metrics(
-                actor_loss=actor_loss,
-                critic_loss=critic_loss,
-                ratio=ratio,
-                advantages=advantages,
-                values=values,
-                rewards_to_go=rewards_to_go
-            )
-
-        return new_log_probs
+                self.save_critical_info(
+                    counter=self._counter,
+                    actor_loss=actor_loss,
+                    value_loss=critic_loss,
+                    surrogate1=surrogate1,
+                    surrogate2=surrogate2,
+                    ratio=ratio,
+                    advantages=advantages,
+                    returns=rewards_to_go
+                )
+            
+        # Move models back to CPU after update
+        self._actor.to(self.device)
+        self._critic.to(self.device)
 
     
     # @profile
-    def get_action(self, spatial_tensor, global_info, masks):
+    def get_action(self, spatial_tensor, global_info, masks, device=None):
         try:
+            # Use provided device or default to self.device
+            device = device or self.device
+
             # Ensure inputs are on GPU
-            spatial_tensor = spatial_tensor.to(self.device).float()
-            global_info = global_info.to(self.device).float()
-            masks = masks.to(self.device).float()
+            spatial_tensor = spatial_tensor.to(device).float()
+            global_info = global_info.to(device).float()
+            masks = masks.to(device).float()
 
             # Get action logits from actor network
             logits = self._actor.forward(spatial_tensor, global_info) # -> (batch_size, action_space_size)
@@ -441,9 +484,13 @@ class PPOClipAgent:
             dist = Categorical(probs)
             flat_indices = dist.sample()  # Will sample for each item in batch
 
-            actions = (flat_indices.unsqueeze(1) // self.multipliers) % torch.tensor(
-                self.output_size, device=self.device
-            )
+            # Ensure multipliers are on the correct device
+            multipliers = self.multipliers.to(device)
+
+            # Ensure the output size tensor is on the correct device
+            output_size_tensor = torch.tensor(self.output_size, device=device)
+
+            actions = (flat_indices.unsqueeze(1) // multipliers) % output_size_tensor
 
             return actions.long(), probs
         
@@ -482,3 +529,56 @@ class PPOClipAgent:
         self.writer.add_scalar('Values/returns', rewards_to_go.mean().item(), self.update_count)
 
         self.update_count += 1
+    
+    def save_critical_info(self, counter: int, actor_loss: torch.Tensor, value_loss: torch.Tensor, 
+                          surrogate1: torch.Tensor, surrogate2: torch.Tensor, ratio: torch.Tensor, advantages: torch.Tensor, returns: torch.Tensor):
+        """
+        Log critical information about the training process every 10 games
+        """
+        log_path = os.path.join(self._save_dir, '_training_log.txt')
+        # Create the log file if it doesn't exist
+        if not os.path.exists(log_path):
+            with open(log_path, 'w') as f:
+                f.write('')  # Create an empty file
+
+        with open(log_path, 'a') as f:
+            f.write(f"\n{'='*20} Count {counter} {'='*20}\n")
+            f.write(f"Actor Loss: {actor_loss.item():.6f}\n")
+            f.write(f"Value Loss: {value_loss.item():.6f}\n")
+            f.write(f"Surrogate Objective 1: {surrogate1}\n")
+            f.write(f"Surrogate Objective 2: {surrogate2}\n")
+            f.write(f"Ratio of Probabilities: {ratio.mean().item():.6f}\n")
+            num_elements = 7  # Change this variable to adjust the number of elements printed
+            truncated_advantages = [round(a.item(), 6) for a in advantages[:num_elements]] + ["..."] + [round(a.item(), 6) for a in advantages[-num_elements:]]
+            f.write(f"Advantages: {truncated_advantages}\n")
+            f.write(f"Returns: {returns.mean().item():.6f} (mean), {returns.std().item():.6f} (std)\n")
+            f.write("Actor Network:\n")
+            for name, param in self._actor.named_parameters():
+                f.write(f"{name}: mean={param.mean().item():.6f}")
+                if param.numel() > 1:  # Check if tensor has more than one element
+                    f.write(f", std={param.std().item():.6f}\n")
+                else:
+                    f.write(", std=N/A\n")
+            f.write("Critic Network:\n")
+            for name, param in self._critic.named_parameters():
+                f.write(f"{name}: mean={param.mean().item():.6f}")
+                if param.numel() > 1:  # Check if tensor has more than one element
+                    f.write(f", std={param.std().item():.6f}\n")
+                else:
+                    f.write(", std=N/A\n")
+            f.write("Actor Gradients:\n")
+            for name, param in self._actor.named_parameters():
+                if param.grad is not None:
+                    f.write(f"{name}: grad mean={param.grad.mean().item():.6f}")
+                    if param.grad.numel() > 1:  # Check if tensor has more than one element
+                        f.write(f", grad std={param.grad.std().item():.6f}\n")
+                    else:
+                        f.write(", grad std=N/A\n")
+            f.write("Critic Gradients:\n")
+            for name, param in self._critic.named_parameters():
+                if param.grad is not None:
+                    f.write(f"{name}: grad mean={param.grad.mean().item():.6f}")
+                    if param.grad.numel() > 1:  # Check if tensor has more than one element
+                        f.write(f", grad std={param.grad.std().item():.6f}\n")
+                    else:
+                        f.write(", grad std=N/A\n")
