@@ -169,7 +169,7 @@ class PPOClipAgent:
             "global_info": [],
             "actions": [],
             "rewards": [],
-            "probs": [],
+            "log_probs": [],
             "masks": []
         }
         self._trajectories = copy.deepcopy(self._base_trajectories)
@@ -288,7 +288,7 @@ class PPOClipAgent:
                 masks[batch_idx][action[0]][action[1]][action[2]] = 0
 
         # Collect trajectory
-        actions, probs = self.get_action(spatial_tensor, global_info, masks, device=self.device)
+        actions, log_probs = self.get_action(spatial_tensor, global_info, masks, device=self.device)
 
         self._trajectories["spatial_tensor"].append(spatial_tensor)
         self._trajectories["global_info"].append(global_info)
@@ -296,7 +296,7 @@ class PPOClipAgent:
 
         # Rewards are calculated after the game ends
         self._trajectories["rewards"].append(torch.tensor([[0]], device=self.device))
-        self._trajectories["probs"].append(probs)
+        self._trajectories["log_probs"].append(log_probs)
         self._trajectories["masks"].append(masks)
 
         # if self._counter % 512 == 0:
@@ -323,7 +323,7 @@ class PPOClipAgent:
             self._trajectories["global_info"] = [self._trajectories["global_info"][i] for i in sorted_indices]
             self._trajectories["actions"] = [self._trajectories["actions"][i] for i in sorted_indices]
             self._trajectories["rewards"] = [self._trajectories["rewards"][i] for i in sorted_indices]
-            self._trajectories["probs"] = [self._trajectories["probs"][i] for i in sorted_indices]
+            self._trajectories["log_probs"] = [self._trajectories["log_probs"][i] for i in sorted_indices]
             self._trajectories["masks"] = [self._trajectories["masks"][i] for i in sorted_indices]
 
             self._update()
@@ -390,7 +390,7 @@ class PPOClipAgent:
         self._critic.to(self.training_device)
 
         # Move tensors to training device
-        probs = torch.cat(self._trajectories["probs"], dim=0).to(self.training_device).float()
+        old_log_probs = torch.cat(self._trajectories["log_probs"], dim=0).to(self.training_device).float()
         actions = torch.cat(self._trajectories["actions"], dim=0).to(self.training_device).float()
         rewards = torch.cat(self._trajectories["rewards"], dim=0).to(self.training_device).float()
         dones = (rewards != 0).float().to(self.training_device)
@@ -400,11 +400,6 @@ class PPOClipAgent:
 
         # Move multipliers to training device
         multipliers = self.multipliers.to(self.training_device)
-
-        # Calculate old log probs before the updates (we'll need them to compare how much the policy changes)
-        dist = Categorical(probs)
-        flat_actions = (actions.float() * multipliers).sum(dim=1)
-        old_log_probs = dist.log_prob(flat_actions)
 
         # Calculate values, advantages, and returns once before the epoch loop
         # NOTE: We calculate the advantages BEFORE the updates because it represents the empirical advantage from our taken actions
@@ -491,6 +486,9 @@ class PPOClipAgent:
             dist = Categorical(probs)
             flat_indices = dist.sample()  # Will sample for each item in batch
 
+            # Calculate log_prob of chosen action immediately
+            log_probs = dist.log_prob(flat_indices)
+
             # Ensure multipliers are on the correct device
             multipliers = self.multipliers.to(device)
 
@@ -499,7 +497,7 @@ class PPOClipAgent:
 
             actions = (flat_indices.unsqueeze(1) // multipliers) % output_size_tensor
 
-            return actions.long(), probs
+            return actions.long(), log_probs
         
         except Exception as e:
             print(f"Error in get_action: {e}")
