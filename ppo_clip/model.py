@@ -309,22 +309,22 @@ class PPOClipAgent:
         #     print("mask shape:", len(self._trajectories["masks"]), self._trajectories["masks"][0].shape)
         
         if self._counter % self._batch_size == 0:
-            # Convert list of tensors to single tensor for easier manipulation
-            global_info_tensor = torch.cat(self._trajectories["global_info"], dim=0)
-            
-            # Get tribe IDs from first column
-            tribe_ids = global_info_tensor[:, 0]
-
-            # Get indices that would sort by tribe ID while preserving order
-            sorted_indices = torch.argsort(tribe_ids, stable=True)
-            
-            # Apply sorting to all trajectory components
-            self._trajectories["spatial_tensor"] = [self._trajectories["spatial_tensor"][i] for i in sorted_indices]
-            self._trajectories["global_info"] = [self._trajectories["global_info"][i] for i in sorted_indices]
-            self._trajectories["actions"] = [self._trajectories["actions"][i] for i in sorted_indices]
-            self._trajectories["rewards"] = [self._trajectories["rewards"][i] for i in sorted_indices]
-            self._trajectories["log_probs"] = [self._trajectories["log_probs"][i] for i in sorted_indices]
-            self._trajectories["masks"] = [self._trajectories["masks"][i] for i in sorted_indices]
+#             # Convert list of tensors to single tensor for easier manipulation
+#             global_info_tensor = torch.cat(self._trajectories["global_info"], dim=0)
+#             
+#             # Get tribe IDs from first column
+#             tribe_ids = global_info_tensor[:, 0]
+# 
+#             # Get indices that would sort by tribe ID while preserving order
+#             sorted_indices = torch.argsort(tribe_ids, stable=True)
+#             
+#             # Apply sorting to all trajectory components
+#             self._trajectories["spatial_tensor"] = [self._trajectories["spatial_tensor"][i] for i in sorted_indices]
+#             self._trajectories["global_info"] = [self._trajectories["global_info"][i] for i in sorted_indices]
+#             self._trajectories["actions"] = [self._trajectories["actions"][i] for i in sorted_indices]
+#             self._trajectories["rewards"] = [self._trajectories["rewards"][i] for i in sorted_indices]
+#             self._trajectories["log_probs"] = [self._trajectories["log_probs"][i] for i in sorted_indices]
+#             self._trajectories["masks"] = [self._trajectories["masks"][i] for i in sorted_indices]
 
             self._update()
 
