@@ -270,19 +270,24 @@ def reward_fn(gs, active_tribe_id):
         print("winner", winner)
 
         if winner == active_tribe_id:
-            for tribe in rankings:
-                if tribe['id'] == active_tribe_id:
-                    total_possible_counted_cities = max(1, BOARD_LEN * BOARD_LEN / 4)
-                    city_reward_pct = min(tribe['numCities'] / total_possible_counted_cities, 1)
-
-                    total_possible_counted_production = 150
-                    production_reward_pct = min(tribe['production'] / total_possible_counted_production, 1)
-
-                    # This can only be max .1, because the real reward is 1 for winning
-                    reward = .05 * city_reward_pct + .05 * production_reward_pct
-                    break
+            reward = 0.1  # Simple fixed reward for winning by score
         else:
             reward = -1.0
+
+#         if winner == active_tribe_id:
+#             for tribe in rankings:
+#                 if tribe['id'] == active_tribe_id:
+#                     total_possible_counted_cities = max(1, BOARD_LEN * BOARD_LEN / 4)
+#                     city_reward_pct = min(tribe['numCities'] / total_possible_counted_cities, 1)
+# 
+#                     total_possible_counted_production = 150
+#                     production_reward_pct = min(tribe['production'] / total_possible_counted_production, 1)
+# 
+#                     # This can only be max .1, because the real reward is 1 for winning
+#                     reward = .05 * city_reward_pct + .05 * production_reward_pct
+#                     break
+#         else:
+#             reward = -1.0
 
     return reward
 

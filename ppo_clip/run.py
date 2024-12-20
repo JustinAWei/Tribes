@@ -69,7 +69,7 @@ async def receive_data(request: Request):
         # Select random action from valid actions
         # action = random.choice(valid_actions)
         
-        action = agent.run(0, gs, valid_actions)
+        action = agent.run(current_game_id, gs, valid_actions)
         # print("Action: ", action)
 
         # convert last action to (action_type, extra_var)
@@ -95,7 +95,7 @@ async def receive_data(request: Request):
         print("global_info shape:", len(agent._trajectories["global_info"]), agent._trajectories["global_info"][0].shape)
         print("actions shape:", len(agent._trajectories["actions"]), agent._trajectories["actions"][0].shape) 
         print("rewards shape:", len(agent._trajectories["rewards"]), agent._trajectories["rewards"][0].shape)
-        print("probs shape:", len(agent._trajectories["probs"]), agent._trajectories["probs"][0].shape)
+        print("log_probs shape:", len(agent._trajectories["log_probs"]), agent._trajectories["log_probs"][0].shape)
         print("mask shape:", len(agent._trajectories["masks"]), agent._trajectories["masks"][0].shape)
         return {"status": 500, "message": str(e)}
 

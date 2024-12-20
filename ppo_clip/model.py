@@ -165,6 +165,7 @@ class PPOClipAgent:
         ], device=self.device, dtype=torch.float32)
 
         self._base_trajectories = {
+            "game_id": [],
             "spatial_tensor": [],
             "global_info": [],
             "actions": [],
@@ -266,7 +267,7 @@ class PPOClipAgent:
         # the last turn for the tribe that didn't win should be set to 0
     
     # @profile
-    def run(self, id, game_state, valid_actions):
+    def run(self, game_id, game_state, valid_actions):
         self._counter += 1
 
         # game_states = [batch_size, 1]
@@ -290,6 +291,7 @@ class PPOClipAgent:
         # Collect trajectory
         actions, log_probs = self.get_action(spatial_tensor, global_info, masks, device=self.device)
 
+        self._trajectories["game_id"].append(game_id)
         self._trajectories["spatial_tensor"].append(spatial_tensor)
         self._trajectories["global_info"].append(global_info)
         self._trajectories["actions"].append(actions)
@@ -298,33 +300,52 @@ class PPOClipAgent:
         self._trajectories["rewards"].append(torch.tensor([[0]], device=self.device))
         self._trajectories["log_probs"].append(log_probs)
         self._trajectories["masks"].append(masks)
-
-        # if self._counter % 512 == 0:
-        #     print("=== Trajectory Shapes ===")
-        #     print("spatial_tensor shape:", len(self._trajectories["spatial_tensor"]), self._trajectories["spatial_tensor"][0].shape)
-        #     print("global_info shape:", len(self._trajectories["global_info"]), self._trajectories["global_info"][0].shape)
-        #     print("actions shape:", len(self._trajectories["actions"]), self._trajectories["actions"][0].shape) 
-        #     print("rewards shape:", len(self._trajectories["rewards"]), self._trajectories["rewards"][0].shape)
-        #     print("probs shape:", len(self._trajectories["probs"]), self._trajectories["probs"][0].shape)
-        #     print("mask shape:", len(self._trajectories["masks"]), self._trajectories["masks"][0].shape)
         
         if self._counter % self._batch_size == 0:
-#             # Convert list of tensors to single tensor for easier manipulation
-#             global_info_tensor = torch.cat(self._trajectories["global_info"], dim=0)
-#             
-#             # Get tribe IDs from first column
-#             tribe_ids = global_info_tensor[:, 0]
-# 
-#             # Get indices that would sort by tribe ID while preserving order
-#             sorted_indices = torch.argsort(tribe_ids, stable=True)
-#             
-#             # Apply sorting to all trajectory components
-#             self._trajectories["spatial_tensor"] = [self._trajectories["spatial_tensor"][i] for i in sorted_indices]
-#             self._trajectories["global_info"] = [self._trajectories["global_info"][i] for i in sorted_indices]
-#             self._trajectories["actions"] = [self._trajectories["actions"][i] for i in sorted_indices]
-#             self._trajectories["rewards"] = [self._trajectories["rewards"][i] for i in sorted_indices]
-#             self._trajectories["log_probs"] = [self._trajectories["log_probs"][i] for i in sorted_indices]
-#             self._trajectories["masks"] = [self._trajectories["masks"][i] for i in sorted_indices]
+            # Convert list of tensors to single tensor for easier manipulation
+            global_info_tensor = torch.cat(self._trajectories["global_info"], dim=0)
+            game_ids = torch.tensor(self._trajectories["game_id"], device=global_info_tensor.device)
+            
+            # Get tribe IDs from first column
+            tribe_ids = global_info_tensor[:, 0]
+
+            # Create a composite key for sorting: game_id * max_tribe_id + tribe_id
+            max_tribe_id = tribe_ids.max() + 1
+            sort_keys = game_ids * max_tribe_id + tribe_ids
+
+            # Get indices that would sort by tribe ID while preserving order
+            sorted_indices = torch.argsort(sort_keys, stable=True)
+            
+            # Apply sorting to all trajectory components
+            self._trajectories["game_id"] = [self._trajectories["game_id"][i] for i in sorted_indices]
+            self._trajectories["spatial_tensor"] = [self._trajectories["spatial_tensor"][i] for i in sorted_indices]
+            self._trajectories["global_info"] = [self._trajectories["global_info"][i] for i in sorted_indices]
+            self._trajectories["actions"] = [self._trajectories["actions"][i] for i in sorted_indices]
+            self._trajectories["rewards"] = [self._trajectories["rewards"][i] for i in sorted_indices]
+            self._trajectories["log_probs"] = [self._trajectories["log_probs"][i] for i in sorted_indices]
+            self._trajectories["masks"] = [self._trajectories["masks"][i] for i in sorted_indices]
+
+            # print("\n=== Trajectory Sorting Debug ===")
+            # print("Sequence of (Game ID, Tribe ID) pairs:")
+            # 
+            # # Show the first 20 and last 20 entries to verify sorting
+            # entries = list(zip(
+            #     [int(gid) for gid in self._trajectories["game_id"]], 
+            #     [int(self._trajectories["global_info"][i][0, 0].item()) for i in range(len(self._trajectories["game_id"]))]
+            # ))
+            # 
+            # print("\nFirst 20 entries:")
+            # for i, (game_id, tribe_id) in enumerate(entries[:20]):
+            #     print(f"{i:4d}: Game {game_id:2d}, Tribe {tribe_id:2d}")
+            # 
+            # print("\n... middle entries omitted ...")
+            # 
+            # print("\nLast 20 entries:")
+            # for i, (game_id, tribe_id) in enumerate(entries[-20:], start=len(entries)-20):
+            #     print(f"{i:4d}: Game {game_id:2d}, Tribe {tribe_id:2d}")
+            # 
+            # print("\nTotal trajectories:", len(entries))
+            # print("===========================\n")
 
             self._update()
 
