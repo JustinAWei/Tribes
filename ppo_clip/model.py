@@ -401,20 +401,25 @@ class PPOClipAgent:
         # Move multipliers to training device
         multipliers = self.multipliers.to(self.training_device)
 
+        # Calculate old log probs before the updates (we'll need them to compare how much the policy changes)
         dist = Categorical(probs)
         flat_actions = (actions.float() * multipliers).sum(dim=1)
         old_log_probs = dist.log_prob(flat_actions)
 
+        # Calculate values, advantages, and returns once before the epoch loop
+        # NOTE: We calculate the advantages BEFORE the updates because it represents the empirical advantage from our taken actions
+        values = self._critic.forward(spatial_tensor, global_info)
+        rewards_to_go, advantages = self.calculate_advantages(rewards, values.detach(), dones.detach())
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)  # Normalize advantages since rewards are extremely sparse
+
         for _ in range(self._n_epochs):
-            # print("=== Epoch", i, "===")
-            values = self._critic.forward(spatial_tensor, global_info)
+            # Get new values from the critic
+            new_values = self._critic.forward(spatial_tensor, global_info)
 
-            # Advantage
-            rewards_to_go, advantages = self.calculate_advantages(rewards, values.detach(), dones.detach())
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8) # Normalize advantages since rewards are extremely sparse
-
-            self._actor_optimizer.zero_grad()
-            _, new_probs = self.get_action(spatial_tensor, global_info, masks, device=self.training_device)
+            # Get new logits directly from actor and apply masking
+            new_logits = self._actor.forward(spatial_tensor, global_info)
+            new_masked_logits = new_logits.add(masks)
+            new_probs = torch.softmax(new_masked_logits.flatten(start_dim=1), dim=1)
             dist = Categorical(new_probs)
             flat_actions = (actions * multipliers).sum(dim=1)
             new_log_probs = dist.log_prob(flat_actions)
@@ -422,6 +427,7 @@ class PPOClipAgent:
             # entropy = probs.entropy()  
 
             # Actor loss
+            self._actor_optimizer.zero_grad()
             ratio = torch.exp(new_log_probs - old_log_probs.detach())
             surrogate1 = ratio * advantages
             surrogate2 = torch.clamp(ratio, 1 - self._clip_ratio, 1 + self._clip_ratio) * advantages
@@ -431,11 +437,11 @@ class PPOClipAgent:
 
             # Critic loss
             self._critic_optimizer.zero_grad()
-            criterion = nn.MSELoss()
-            critic_loss = criterion(values, rewards_to_go)
+            critic_loss = nn.MSELoss()(new_values, rewards_to_go)
             critic_loss.backward()
             self._critic_optimizer.step()
             
+            # Log training metrics
             if self._counter % (self._batch_size * 5) == 0:
                 self._log_training_metrics(
                     actor_loss=actor_loss,
