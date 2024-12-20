@@ -411,6 +411,7 @@ class PPOClipAgent:
 
             # Advantage
             rewards_to_go, advantages = self.calculate_advantages(rewards, values.detach(), dones.detach())
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8) # Normalize advantages since rewards are extremely sparse
 
             self._actor_optimizer.zero_grad()
             _, new_probs = self.get_action(spatial_tensor, global_info, masks, device=self.training_device)
