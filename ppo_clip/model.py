@@ -1,3 +1,6 @@
+"""
+TODO: SPLIT THIS FILE UP SINCE IT'S TOO BIG
+"""
 import copy
 import os
 import torch
@@ -19,13 +22,13 @@ TRAINING_DEVICE = 'mps' if torch.backends.mps.is_available() else 'cpu' # for tr
 
 # Network architecture constants
 INITIAL_CHANNELS = 27        # Input channels for spatial features
-CONV_CHANNELS = 128          # Number of channels in conv layers
+CONV_CHANNELS = 64          # Number of channels in conv layers
 GLOBAL_INPUT_SIZE = 2       # Size of global features input
 GLOBAL_HIDDEN_SIZE = 64
 GLOBAL_OUTPUT_SIZE = 32
 
-POLICY_HIDDEN_SIZES = [512, 256, 128]
-VALUE_HIDDEN_SIZES = [256, 64]
+POLICY_HIDDEN_SIZES = [128, 64]
+VALUE_HIDDEN_SIZES = [128, 64]
 
 # Calculate spatial dimensions after convolutions
 def calculate_conv_output_size(size, kernel_size=3, stride=1, padding=1):
@@ -36,14 +39,46 @@ def calculate_spatial_size(board_size):
     size = board_size
     # First stride-2 conv
     size = calculate_conv_output_size(size, stride=2)
-    # Second stride-2 conv
-    size = calculate_conv_output_size(size, stride=2)
     return size
 
 BOARD_SIZE = 11  # This should match your game board size
 FINAL_SPATIAL_SIZE = calculate_spatial_size(BOARD_SIZE)
 SPATIAL_FLAT_SIZE = CONV_CHANNELS * FINAL_SPATIAL_SIZE * FINAL_SPATIAL_SIZE
 COMBINED_FEATURE_SIZE = SPATIAL_FLAT_SIZE + GLOBAL_OUTPUT_SIZE
+
+def calculate_total_parameters(output_size):
+    # Convolutional layers
+    conv1_params = (INITIAL_CHANNELS * 3 * 3 * CONV_CHANNELS) + CONV_CHANNELS  # weights + biases
+    conv2_params = (CONV_CHANNELS * 3 * 3 * CONV_CHANNELS) + CONV_CHANNELS    # weights + biases
+
+    # Global feature network
+    global1_params = (GLOBAL_INPUT_SIZE * GLOBAL_HIDDEN_SIZE) + GLOBAL_HIDDEN_SIZE
+    global2_params = (GLOBAL_HIDDEN_SIZE * GLOBAL_OUTPUT_SIZE) + GLOBAL_OUTPUT_SIZE
+
+    # Policy head
+    policy_head_params = 0
+    input_size = CONV_CHANNELS * FINAL_SPATIAL_SIZE * FINAL_SPATIAL_SIZE + GLOBAL_OUTPUT_SIZE
+    for hidden_size in POLICY_HIDDEN_SIZES:
+        policy_head_params += (input_size * hidden_size) + hidden_size  # weights + biases
+        input_size = hidden_size
+    policy_head_params += (input_size * math.prod(output_size)) + math.prod(output_size)
+
+    # Value head
+    value_head_params = 0
+    input_size = CONV_CHANNELS * FINAL_SPATIAL_SIZE * FINAL_SPATIAL_SIZE + GLOBAL_OUTPUT_SIZE
+    for hidden_size in VALUE_HIDDEN_SIZES:
+        value_head_params += (input_size * hidden_size) + hidden_size  # weights + biases
+        input_size = hidden_size
+    value_head_params += (input_size * 1) + 1  # Final layer outputs a single value
+
+    total_params = conv1_params + conv2_params + global1_params + global2_params + policy_head_params + value_head_params
+
+    print(f"Total number of parameters: {total_params}")
+    print(f"Breakdown:")
+    print(f"  Conv layers: {conv1_params + conv2_params}")
+    print(f"  Global network: {global1_params + global2_params}")
+    print(f"  Policy head: {policy_head_params}")
+    print(f"  Value head: {value_head_params}")
 
 # To reduce duplicate code, this is used for both the actor and the critic
 class FeatureExtractor(nn.Module):
@@ -53,10 +88,6 @@ class FeatureExtractor(nn.Module):
         # CNN for spatial features
         self.conv_net = nn.Sequential(
             nn.Conv2d(INITIAL_CHANNELS, CONV_CHANNELS, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(CONV_CHANNELS, CONV_CHANNELS, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(CONV_CHANNELS, CONV_CHANNELS, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
             nn.Conv2d(CONV_CHANNELS, CONV_CHANNELS, kernel_size=3, stride=2, padding=1),
             nn.ReLU()
@@ -133,14 +164,17 @@ class PPOClipAgent:
                  output_size, 
                  lr=0.0001, 
                  clip_ratio=0.15, 
-                 batch_size=2048,
+                 batch_size=1600,
                  n_epochs=5, 
                  gamma=0.9999, 
                  gae_lambda=0.75,
+                 value_coef=0.5,
+                 entropy_coef=0.05,
                  checkpoint_path=""):
         self.device = DEVICE
         self.training_device = TRAINING_DEVICE
         print(f"Using device: {self.device} for inference, {self.training_device} for training")
+        calculate_total_parameters(output_size)
 
         self.input_size = input_size
         self.output_size = output_size
@@ -158,6 +192,8 @@ class PPOClipAgent:
         self._n_epochs = n_epochs
         self._gamma = gamma
         self._gae_lambda = gae_lambda
+        self._entropy_coef = entropy_coef
+        self._value_coef = value_coef
 
         self.multipliers = torch.tensor([
             np.prod(self.output_size[i+1:]) 
@@ -192,7 +228,7 @@ class PPOClipAgent:
         else:
             unique_dir_name = (
                 f"{save_path}/lr_{lr}_clip_{clip_ratio}_bs_{batch_size}_epochs_{n_epochs}_"
-                f"gamma_{gamma}_gae_{gae_lambda}_{time.strftime('%Y%m%d-%H%M%S')}"
+                f"gamma_{gamma}_gae_{gae_lambda}_entropy_{entropy_coef}_value_{value_coef}_{time.strftime('%Y%m%d-%H%M%S')}"
             )
         
         self._checkpoint_path = checkpoint_path
@@ -216,6 +252,8 @@ class PPOClipAgent:
             'batch_size': self._batch_size,
             'n_epochs': self._n_epochs,
             'gae_lambda': self._gae_lambda,
+            'entropy_coef': self._entropy_coef,
+            'value_coef': self._value_coef,
             'input_size': self.input_size,
             'output_size': self.output_size 
         }
@@ -239,6 +277,8 @@ class PPOClipAgent:
         self._batch_size = checkpoint['batch_size']
         self._n_epochs = checkpoint['n_epochs']
         self._gae_lambda = checkpoint['gae_lambda']
+        self._entropy_coef = checkpoint['entropy_coef']
+        self._value_coef = checkpoint['value_coef']
         self.input_size = checkpoint['input_size']
         self.output_size = checkpoint['output_size']
         print(f"Loaded checkpoint from {checkpoint_path}")
@@ -436,12 +476,9 @@ class PPOClipAgent:
 
             # Get new logits directly from actor and apply masking
             new_logits = self._actor.forward(spatial_tensor, global_info)
-            new_logits.retain_grad()
             # new_masked_logits = new_logits.add(masks)
             new_masked_logits = new_logits + masks
-            new_masked_logits.retain_grad()
             new_probs = torch.softmax(new_masked_logits.flatten(start_dim=1), dim=1)
-            new_probs.retain_grad()
 
             # print("\nDEBUG:")
             # print(f"New logits range: {new_logits.min().item():.4f} to {new_logits.max().item():.4f}")
@@ -452,7 +489,6 @@ class PPOClipAgent:
             dist = Categorical(new_probs)
             flat_actions = (actions * multipliers).sum(dim=1)
             new_log_probs = dist.log_prob(flat_actions)
-            new_log_probs.retain_grad()
             # print(f"New log probs shape: {new_log_probs.shape}")
 
 #             # Debug values before ratio calculation
@@ -468,21 +504,20 @@ class PPOClipAgent:
 
             # Actor loss
             ratio = torch.exp(new_log_probs - old_log_probs.detach())
-            ratio.retain_grad() 
-            # print(f"Ratio range: {ratio.min().item():.4f} to {ratio.max().item():.4f}")
-            # print(f"Advantages range: {advantages.min().item():.4f} to {advantages.max().item():.4f}")
+            print(f"Ratio range: {ratio.min().item():.4f} to {ratio.max().item():.4f}")
+            print(f"Advantages range: {advantages.min().item():.4f} to {advantages.max().item():.4f}")
 
             surrogate1 = ratio * advantages
-            # print(f"Mean of surrogate1: {surrogate1.mean().item()}")
+            print(f"Mean of surrogate1: {surrogate1.mean().item()}")
             surrogate2 = torch.clamp(ratio, 1 - self._clip_ratio, 1 + self._clip_ratio) * advantages
-            # print(f"Mean of surrogate2: {surrogate2.mean().item()}")
-            actor_loss = -torch.min(surrogate1, surrogate2).mean()
+            print(f"Mean of surrogate2: {surrogate2.mean().item()}")
+            actor_loss = -torch.min(surrogate1, surrogate2).mean() - self._entropy_coef * dist.entropy().mean()
 
-#             print(f"Normalized advantages: {advantages[:5]}")
-#             print(f"Surrogate 1: {surrogate1[:10]}")
-#             print(f"Surrogate 2: {surrogate2[:10]}")
-# 
-#             print(f"Actor loss: {actor_loss.item():.6f}")
+            print(f"Normalized advantages: {advantages[:5]}")
+            print(f"Surrogate 1: {surrogate1[:10]}")
+            print(f"Surrogate 2: {surrogate2[:10]}")
+
+            print(f"Actor loss: {actor_loss.item():.6f}")
 
             self._actor_optimizer.zero_grad()
             actor_loss.backward()
@@ -495,26 +530,24 @@ class PPOClipAgent:
             # print(f"new_log_probs grad: {new_log_probs.grad is not None}")
             # print(f"ratio grad: {ratio.grad is not None}")
 
-            # print("\nGradient check:")
-            # for name, param in self._actor.named_parameters():
-            #     if param.grad is not None:
-            #         grad_norm = param.grad.norm().item()
-            #         print(f"{name} grad norm: {grad_norm:.6f}")
-            #     else:
-            #         print(f"{name} has no gradient")
-            self._actor_optimizer.step()
+            print("\nGradient check:")
+            for name, param in self._actor.named_parameters():
+                if param.grad is not None:
+                    grad_norm = param.grad.norm().item()
+                    print(f"{name} grad norm: {grad_norm:.6f}")
+                else:
+                    print(f"{name} has no gradient")
             # print("\nParameter change check:")
             # for name, param in self._actor.named_parameters():
             #     print(f"{name} param norm: {param.norm().item():.6f}")
 
             # Critic loss
             new_values = self._critic.forward(spatial_tensor, global_info)
-            critic_loss = nn.MSELoss()(new_values, rewards_to_go)
+            critic_loss = nn.MSELoss()(new_values, rewards_to_go) * self._value_coef
 
             self._critic_optimizer.zero_grad()
             critic_loss.backward()
-            self._critic_optimizer.step()
-            
+
             # Log training metrics
             if self._counter % (self._batch_size * 5) == 0:
                 self._log_training_metrics(
@@ -536,6 +569,9 @@ class PPOClipAgent:
                     advantages=advantages,
                     returns=rewards_to_go
                 )
+                
+            self._actor_optimizer.step()
+            self._critic_optimizer.step()
             
         # Move models back to CPU after update
         self._actor.to(self.device)
@@ -615,12 +651,12 @@ class PPOClipAgent:
         self.update_count += 1
     
     def save_critical_info(self, counter: int, actor_loss: torch.Tensor, value_loss: torch.Tensor, 
-                          surrogate1: torch.Tensor, surrogate2: torch.Tensor, ratio: torch.Tensor, advantages: torch.Tensor, returns: torch.Tensor):
+                        surrogate1: torch.Tensor, surrogate2: torch.Tensor, ratio: torch.Tensor, 
+                        advantages: torch.Tensor, returns: torch.Tensor):
         """
         Log critical information about the training process every 10 games
         """
         log_path = os.path.join(self._save_dir, '_training_log.txt')
-        # Create the log file if it doesn't exist
         if not os.path.exists(log_path):
             with open(log_path, 'w') as f:
                 f.write('')  # Create an empty file
@@ -629,40 +665,45 @@ class PPOClipAgent:
             f.write(f"\n{'='*20} Count {counter} {'='*20}\n")
             f.write(f"Actor Loss: {actor_loss.item():.6f}\n")
             f.write(f"Value Loss: {value_loss.item():.6f}\n")
-            f.write(f"Surrogate Objective 1: {surrogate1}\n")
-            f.write(f"Surrogate Objective 2: {surrogate2}\n")
-            f.write(f"Ratio of Probabilities: {ratio.mean().item():.6f}\n")
-            num_elements = 7  # Change this variable to adjust the number of elements printed
+            f.write(f"Ratio range: {ratio.min().item():.4f} to {ratio.max().item():.4f}\n")
+            f.write(f"Advantages range: {advantages.min().item():.4f} to {advantages.max().item():.4f}\n")
+            f.write(f"Mean of surrogate1: {surrogate1.mean().item()}\n")
+            f.write(f"Mean of surrogate2: {surrogate2.mean().item()}\n")
+            
+            # Log sample of advantages
+            num_elements = 7
             truncated_advantages = [round(a.item(), 6) for a in advantages[:num_elements]] + ["..."] + [round(a.item(), 6) for a in advantages[-num_elements:]]
-            f.write(f"Advantages: {truncated_advantages}\n")
+            f.write(f"Advantages sample: {truncated_advantages}\n")
+            
+            # Log returns statistics
             f.write(f"Returns: {returns.mean().item():.6f} (mean), {returns.std().item():.6f} (std)\n")
-            f.write("Actor Network:\n")
+            
+            # Log actor network parameters
+            f.write("\nActor Network Parameters:\n")
             for name, param in self._actor.named_parameters():
-                f.write(f"{name}: mean={param.mean().item():.6f}")
-                if param.numel() > 1:  # Check if tensor has more than one element
-                    f.write(f", std={param.std().item():.6f}\n")
-                else:
-                    f.write(", std=N/A\n")
-            f.write("Critic Network:\n")
+                param_norm = param.norm().item()
+                f.write(f"{name} norm: {param_norm:.6f}\n")
+            
+            # Log critic network parameters
+            f.write("\nCritic Network Parameters:\n")
             for name, param in self._critic.named_parameters():
-                f.write(f"{name}: mean={param.mean().item():.6f}")
-                if param.numel() > 1:  # Check if tensor has more than one element
-                    f.write(f", std={param.std().item():.6f}\n")
-                else:
-                    f.write(", std=N/A\n")
-            f.write("Actor Gradients:\n")
+                param_norm = param.norm().item()
+                f.write(f"{name} norm: {param_norm:.6f}\n")
+            
+            # Log actor gradients
+            f.write("\nActor Gradients:\n")
             for name, param in self._actor.named_parameters():
                 if param.grad is not None:
-                    f.write(f"{name}: grad mean={param.grad.mean().item():.6f}")
-                    if param.grad.numel() > 1:  # Check if tensor has more than one element
-                        f.write(f", grad std={param.grad.std().item():.6f}\n")
-                    else:
-                        f.write(", grad std=N/A\n")
-            f.write("Critic Gradients:\n")
+                    grad_norm = param.grad.norm().item()
+                    f.write(f"{name} grad norm: {grad_norm:.6f}\n")
+                else:
+                    f.write(f"{name} has no gradient\n")
+            
+            # Log critic gradients
+            f.write("\nCritic Gradients:\n")
             for name, param in self._critic.named_parameters():
                 if param.grad is not None:
-                    f.write(f"{name}: grad mean={param.grad.mean().item():.6f}")
-                    if param.grad.numel() > 1:  # Check if tensor has more than one element
-                        f.write(f", grad std={param.grad.std().item():.6f}\n")
-                    else:
-                        f.write(", grad std=N/A\n")
+                    grad_norm = param.grad.norm().item()
+                    f.write(f"{name} grad norm: {grad_norm:.6f}\n")
+                else:
+                    f.write(f"{name} has no gradient\n")
