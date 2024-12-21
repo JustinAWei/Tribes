@@ -426,34 +426,92 @@ class PPOClipAgent:
         # NOTE: We calculate the advantages BEFORE the updates because it represents the empirical advantage from our taken actions
         values = self._critic.forward(spatial_tensor, global_info)
         rewards_to_go, advantages = self.calculate_advantages(rewards, values.detach(), dones.detach())
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)  # Normalize advantages since rewards are extremely sparse
+        # advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)  # Normalize advantages since rewards are extremely sparse
 
         for _ in range(self._n_epochs):
-            # Get new values from the critic
-            new_values = self._critic.forward(spatial_tensor, global_info)
+            # print("\nInput verification:")
+            # print(f"old_log_probs requires_grad: {old_log_probs.requires_grad}")
+            # print(f"advantages non-zero elements: {(advantages != 0).sum().item()}")
+            # print(f"advantages mean: {advantages.mean().item()}")
 
             # Get new logits directly from actor and apply masking
             new_logits = self._actor.forward(spatial_tensor, global_info)
-            new_masked_logits = new_logits.add(masks)
+            new_logits.retain_grad()
+            # new_masked_logits = new_logits.add(masks)
+            new_masked_logits = new_logits + masks
+            new_masked_logits.retain_grad()
             new_probs = torch.softmax(new_masked_logits.flatten(start_dim=1), dim=1)
+            new_probs.retain_grad()
+
+            # print("\nDEBUG:")
+            # print(f"New logits range: {new_logits.min().item():.4f} to {new_logits.max().item():.4f}")
+            # print(f"Masked logits range: {new_masked_logits.min().item():.4f} to {new_masked_logits.max().item():.4f}")
+            # print(f"New probs range: {new_probs.min().item():.4f} to {new_probs.max().item():.4f}")
+
+
             dist = Categorical(new_probs)
             flat_actions = (actions * multipliers).sum(dim=1)
             new_log_probs = dist.log_prob(flat_actions)
+            new_log_probs.retain_grad()
+            # print(f"New log probs shape: {new_log_probs.shape}")
+
+#             # Debug values before ratio calculation
+#             print("\nPre-ratio values:")
+#             print(f"new_log_probs: {new_log_probs[:5]}")  # Show first 5 values
+#             print(f"old_log_probs: {old_log_probs[:5]}")
+# 
+#             # More debugging
+#             print(f"New log probs range: {new_log_probs.min().item():.4f} to {new_log_probs.max().item():.4f}")
+#             print(f"Old log probs range: {old_log_probs.min().item():.4f} to {old_log_probs.max().item():.4f}")
 
             # entropy = probs.entropy()  
 
             # Actor loss
-            self._actor_optimizer.zero_grad()
             ratio = torch.exp(new_log_probs - old_log_probs.detach())
+            ratio.retain_grad() 
+            # print(f"Ratio range: {ratio.min().item():.4f} to {ratio.max().item():.4f}")
+            # print(f"Advantages range: {advantages.min().item():.4f} to {advantages.max().item():.4f}")
+
             surrogate1 = ratio * advantages
+            # print(f"Mean of surrogate1: {surrogate1.mean().item()}")
             surrogate2 = torch.clamp(ratio, 1 - self._clip_ratio, 1 + self._clip_ratio) * advantages
+            # print(f"Mean of surrogate2: {surrogate2.mean().item()}")
             actor_loss = -torch.min(surrogate1, surrogate2).mean()
+
+#             print(f"Normalized advantages: {advantages[:5]}")
+#             print(f"Surrogate 1: {surrogate1[:10]}")
+#             print(f"Surrogate 2: {surrogate2[:10]}")
+# 
+#             print(f"Actor loss: {actor_loss.item():.6f}")
+
+            self._actor_optimizer.zero_grad()
             actor_loss.backward()
+
+            # # Check gradients of intermediate values
+            # print("\nGradient flow check:")
+            # print(f"new_logits grad: {new_logits.grad is not None}")
+            # print(f"new_masked_logits grad: {new_masked_logits.grad is not None}")
+            # print(f"new_probs grad: {new_probs.grad is not None}")
+            # print(f"new_log_probs grad: {new_log_probs.grad is not None}")
+            # print(f"ratio grad: {ratio.grad is not None}")
+
+            # print("\nGradient check:")
+            # for name, param in self._actor.named_parameters():
+            #     if param.grad is not None:
+            #         grad_norm = param.grad.norm().item()
+            #         print(f"{name} grad norm: {grad_norm:.6f}")
+            #     else:
+            #         print(f"{name} has no gradient")
             self._actor_optimizer.step()
+            # print("\nParameter change check:")
+            # for name, param in self._actor.named_parameters():
+            #     print(f"{name} param norm: {param.norm().item():.6f}")
 
             # Critic loss
-            self._critic_optimizer.zero_grad()
+            new_values = self._critic.forward(spatial_tensor, global_info)
             critic_loss = nn.MSELoss()(new_values, rewards_to_go)
+
+            self._critic_optimizer.zero_grad()
             critic_loss.backward()
             self._critic_optimizer.step()
             
